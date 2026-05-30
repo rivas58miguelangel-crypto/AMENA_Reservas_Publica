@@ -1,0 +1,14 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Archivos de respaldo y documentos que no deben subir al repositorio
+*.zip
+*.doc
+*.docx
+*.pdf

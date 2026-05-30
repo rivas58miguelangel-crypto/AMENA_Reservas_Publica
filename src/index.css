@@ -1,0 +1,85 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@theme {
+  --font-headline: "Manrope", sans-serif;
+  --font-body: "Inter", sans-serif;
+  
+  --color-primary: #254f66; /* Navy profundo del logo */
+  --color-accent: #d8862e;  /* Naranja Amena */
+  --color-surface: #faf9f6; /* Marfil cálido de fondo */
+  --color-header: #9a9490;  /* Gray/Taupe Header */
+  
+  --shadow-pwa: 0 10px 40px rgba(0, 0, 0, 0.05);
+}
+
+@layer base {
+  body {
+    @apply bg-neutral-200 font-body text-zinc-900 min-h-screen flex items-center justify-center p-0 overflow-y-auto;
+  }
+}
+
+/* Estructura PWA */
+.pwa-container {
+  max-width: 460px;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0 auto;
+  background-color: var(--color-surface);
+  position: relative;
+  overflow: hidden; /* Header and Footer stay fixed if we use pwa-content for scroll */
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  border-radius: 4rem;
+}
+
+@media (min-height: 800px) {
+  .pwa-container {
+    height: 92vh;
+    min-height: auto;
+  }
+}
+
+.pwa-header {
+  background-color: var(--color-header);
+  padding: 1.5rem 1.75rem 1.25rem 1.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.pwa-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--color-surface);
+}
+
+/* Tarjetas y Botones */
+.amena-btn {
+  @apply w-full py-5 rounded-[2rem] font-black text-center transition-all active:scale-95 text-xs uppercase tracking-widest;
+}
+
+.amena-btn-dark {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(26, 58, 74, 0.2);
+  border-radius: 10px;
+}

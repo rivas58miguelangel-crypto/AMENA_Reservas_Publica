@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amena - Visualizador Digital</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      window.vapiLoaded = false;
+      window.conectarVapi = function() {
+        if (window.vapiLoaded) {
+          // If already loaded, maybe toggle or just do nothing if widget is already there
+          return;
+        }
+        const s = document.createElement('script');
+        s.type = 'text/javascript';
+        s.async = true;
+        s.src = 'https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js';
+        s.onload = function() {
+          window.vapiLoaded = true;
+          vapiSDK.run({
+            apiKey: "4b87f578-505a-4fa1-82da-0421ac919f49",
+            assistant: "5c49d66e-ffbd-4969-ae37-8bf1e4026cdd",
+            config: {
+              position: "bottom", // Try 'bottom' if supported, or stick to right and move with CSS
+              title: "Asistente Amena (Demo)",
+              color: "#D4AF37",
+            },
+          });
+        };
+        document.body.appendChild(s);
+      };
+    </script>
+    <style>
+      /* Centering the Vapi widget button safely */
+      .vapi-btn, #vapi-widget-container, [id*="vapi-widget"], [class*="vapi-button"] {
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        bottom: 40px !important;
+        position: fixed !important;
+        z-index: 2147483647 !important; /* Max z-index */
+        pointer-events: auto !important;
+      }
+      
+      /* Make sure the transcript/modal is also centered and not broken by the parent transform */
+      [id*="vapi-dialog"], [class*="vapi-modal"], [class*="vapi-transcript-container"] {
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        bottom: 100px !important;
+        width: 95% !important;
+        max-width: 440px !important;
+      }
+    </style>
+  </body>
+</html>
