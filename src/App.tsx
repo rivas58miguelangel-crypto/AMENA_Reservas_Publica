@@ -43,14 +43,46 @@ type Screen =
   | 'agent_call'
   | 'visit_schedule'
   | 'final_success';
-
 const App: React.FC = () => {
-    const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
+  const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
+  const hasStartedReservationSession = React.useRef(false);
+
   React.useEffect(() => {
     document.documentElement.style.setProperty('--brand-primary', projectBranding.primaryColor);
     document.documentElement.style.setProperty('--brand-secondary', projectBranding.secondaryColor);
     document.documentElement.style.setProperty('--brand-accent', projectBranding.accentColor);
   }, []);
+
+  React.useEffect(() => {
+    const existingSessionId = sessionStorage.getItem('amena_reservation_session_id');
+
+    if (existingSessionId) {
+      setReservationSessionId(existingSessionId);
+      return;
+    }
+
+    if (hasStartedReservationSession.current) {
+      return;
+    }
+
+    hasStartedReservationSession.current = true;
+
+    async function createInitialReservationSession() {
+      const result = await startReservationSession({
+        source: 'amena_public_reservation_app',
+        deviceType: 'desktop',
+        landingPath: window.location.pathname,
+      });
+
+      if (result.ok && result.data?.id) {
+        sessionStorage.setItem('amena_reservation_session_id', result.data.id);
+        setReservationSessionId(result.data.id);
+      }
+    }
+
+    createInitialReservationSession();
+  }, []);
+
   const [step, setStep] = useState(1);
   const [screen, setScreen] = useState<Screen>('welcome');
   const [acceptedTerms, setAcceptedTerms] = useState(false);

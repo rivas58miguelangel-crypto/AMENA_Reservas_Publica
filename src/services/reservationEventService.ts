@@ -6,9 +6,15 @@ type SafeResult<T = any> = {
   error?: string | null;
 };
 
-function logDevError(context: string, error: unknown) {
+function logDevError(context: string, error: any) {
   if (import.meta.env.DEV) {
-    console.warn(`[AMENA Supabase] ${context}`, error);
+    console.warn(`[AMENA Supabase] ${context}`, {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+      raw: error,
+    });
   }
 }
 
