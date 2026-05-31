@@ -22,7 +22,7 @@ import {
 import { cn } from './lib/utils';
 import { SECTORS, HOUSING_TYPES, SECTORS_DATA, type Sector, type Subsector, type Level, type Model } from './constants';
 import { projectBranding } from './config/projectBranding';
-import { startReservationSession } from './services/reservationEventService';
+import { startReservationSession, trackSelectionEvent } from './services/reservationEventService';
 
 type Screen = 
   | 'welcome' 
@@ -109,7 +109,25 @@ const App: React.FC = () => {
     setStep(newStep);
     window.scrollTo(0, 0);
   };
-
+  const trackSelection = (
+  step:
+    | "housing_type"
+    | "sector"
+    | "tower_or_block"
+    | "model"
+    | "level"
+    | "unit_or_lot"
+    | "unit_detail",
+  value: string,
+  metadata?: Record<string, any>
+) => {
+  trackSelectionEvent({
+    sessionId: reservationSessionId,
+    step,
+    value,
+    metadata,
+  });
+};
   const handleLogout = () => {
     // Reset all states
     setStep(1);
@@ -539,7 +557,14 @@ const App: React.FC = () => {
 
         <div className="grid grid-cols-2 gap-4">
           <button
-            onClick={() => { setSelectedType('casas'); navigateTo('sector_selection', 3); }}
+            onClick={() => {
+  setSelectedType('casas');
+  trackSelection('housing_type', 'casas', {
+    label: 'Residencial',
+    display: 'Casas'
+  });
+  navigateTo('sector_selection', 3);
+}}
             className="group bg-white border-2 border-transparent hover:border-primary/20 rounded-[2rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3"
           >
             <div className="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">

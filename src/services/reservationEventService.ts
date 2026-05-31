@@ -79,9 +79,21 @@ export async function trackSelectionEvent(payload: {
 }) {
   return safeInsert("reservation_selection_events", {
     session_id: payload.sessionId ?? null,
-    step: payload.step,
-    value: payload.value,
-    metadata: payload.metadata ?? {},
+    step_name: payload.step,
+    selected_value: payload.value,
+    selected_label:
+      payload.metadata?.display ??
+      payload.metadata?.label ??
+      payload.value,
+    property_type:
+  payload.step === "housing_type"
+    ? (payload.value === "casas" ? "casa" : "apartamento")
+    : payload.metadata?.property_type ?? null,
+    raw_payload: {
+      step: payload.step,
+      value: payload.value,
+      metadata: payload.metadata ?? {},
+    },
     created_at: new Date().toISOString(),
   });
 }
