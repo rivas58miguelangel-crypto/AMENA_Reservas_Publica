@@ -1167,13 +1167,17 @@ const UnitSelectionScreen = () => {
                  <span className="text-[11px] opacity-60 uppercase">Manzana:</span> <span className="text-lg font-black">{selectedTorre?.label}</span>
                </p>
              )}
-             <p className="text-[14px] font-black text-primary uppercase tracking-widest flex justify-between items-center">
-               <span className="text-[11px] opacity-60 uppercase">Modelo:</span> <span className="text-lg font-black">{selectedModel?.name}</span>
-        <p className="text-[14px] font-black text-primary uppercase tracking-widest flex justify-between items-center">
-             <span className="text-[11px] opacity-60 uppercase">Lote:</span>
-             <span className="text-lg font-black">{selectedUnit?.label}</span>
-        </p>             </p>
-             <div className="h-px bg-primary/20 w-full my-4" />
+<p className="text-[14px] font-black text-primary uppercase tracking-widest flex justify-between items-center">
+  <span className="text-[11px] opacity-60 uppercase">Modelo:</span>
+  <span className="text-lg font-black">{selectedModel?.name}</span>
+</p>
+
+<p className="text-[14px] font-black text-primary uppercase tracking-widest flex justify-between items-center">
+  <span className="text-[11px] opacity-60 uppercase">Lote:</span>
+  <span className="text-lg font-black">{selectedUnit?.label}</span>
+</p>             
+
+<div className="h-px bg-primary/20 w-full my-4" />
              <div className="flex justify-between items-center">
                <span className="text-sm font-black text-secondary uppercase opacity-60">Monto Estimado</span>
                <span className={`text-3xl font-black ${accentColor}`}>{selectedModel?.price}</span>
