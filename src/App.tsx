@@ -711,10 +711,18 @@ const App: React.FC = () => {
           {SECTORS.map((sub) => (
             <button
               key={sub.id}
-              onClick={() => { 
+              onClick={() => {
                 const sectorData = data?.subsectors.find(s => s.id === sub.id) || data?.subsectors[0];
-                if (sectorData) setSelectedSector(sectorData);
-                navigateTo('torre_selection', 4); 
+                if (sectorData) {
+                  setSelectedSector(sectorData);
+                  trackSelection('sector', sectorData.id, {
+                    label: sectorData.name,
+                    display: sectorData.name,
+                    description: sectorData.description,
+                    property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa'
+                  });
+                }
+                navigateTo('torre_selection', 4);
               }}
               className={`group bg-white rounded-2xl p-6 text-left shadow-sm border-2 border-transparent ${isApartments ? 'active:border-accent' : 'active:border-primary'} hover:shadow-md transition-all flex flex-col items-start justify-center`}
             >
@@ -781,6 +789,13 @@ const App: React.FC = () => {
                   key={target.id}
                   onClick={() => {
                     setSelectedTorre(target as any);
+                    trackSelection(isApartments ? 'tower_or_block' : 'tower_or_block', target.id, {
+                      label: target.label,
+                      display: target.label,
+                      property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                      sector: selectedSector?.id,
+                      selection_type: isApartments ? 'torre' : 'manzana'
+                    });
                     navigateTo('model_selection', 5);
                   }}
                   className={`bg-white border ${isApartments ? 'border-accent/10' : 'border-primary/10'} rounded-2xl p-6 text-left flex flex-col gap-2 shadow-sm ${isApartments ? 'active:ring-accent/20' : 'active:ring-primary/20'} transition-all group`}

@@ -79,7 +79,16 @@ export async function trackSelectionEvent(payload: {
 }) {
   return safeInsert("reservation_selection_events", {
     session_id: payload.sessionId ?? null,
-    step_name: payload.step,
+    step_name:
+  payload.step === "housing_type"
+    ? "tipo_propiedad"
+    : payload.step === "tower_or_block"
+      ? "torre"
+      : payload.step === "unit_or_lot"
+        ? "unidad"
+        : payload.step === "unit_detail"
+          ? "confirmacion"
+          : payload.step,
     selected_value: payload.value,
     selected_label:
       payload.metadata?.display ??
