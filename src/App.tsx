@@ -117,7 +117,9 @@ const App: React.FC = () => {
     | "model"
     | "level"
     | "unit_or_lot"
-    | "unit_detail",
+    | "unit_detail"
+    | "confirmation"
+    | "post_reservation_cta",
   value: string,
   metadata?: Record<string, any>
 ) => {
@@ -575,7 +577,14 @@ const App: React.FC = () => {
           </button>
 
           <button
-            onClick={() => { setSelectedType('apartamentos'); navigateTo('sector_selection', 3); }}
+            onClick={() => {
+              setSelectedType('apartamentos');
+              trackSelection('housing_type', 'apartamentos', {
+                label: 'Vertical',
+                display: 'Apartamentos'
+              });
+              navigateTo('sector_selection', 3);
+            }}
             className="group bg-white border-2 border-transparent hover:border-accent/20 rounded-[2rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3"
           >
              <div className="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
@@ -864,6 +873,16 @@ const App: React.FC = () => {
               key={model.id}
               onClick={() => {
                 setSelectedModel(model);
+                trackSelection('model', model.id, {
+                  label: model.name,
+                  display: model.name,
+                  property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                  sector: selectedSector?.id,
+                  tower_or_block: selectedTorre?.id,
+                  selection_type: 'modelo',
+                  price: model.price,
+                  area: model.area
+                });
                 if (isApartments) navigateTo('level_selection', 6);
                 else navigateTo('unit_selection', 7);
               }}
@@ -891,6 +910,17 @@ const App: React.FC = () => {
           models={models}
           onSelect={(model) => {
             setSelectedModel(model);
+            trackSelection('model', model.id, {
+              label: model.name,
+              display: model.name,
+              property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+              sector: selectedSector?.id,
+              tower_or_block: selectedTorre?.id,
+              selection_type: 'modelo',
+              source: 'model_gallery',
+              price: model.price,
+              area: model.area
+            });
           }}
         />
       </motion.div>
@@ -936,6 +966,15 @@ const App: React.FC = () => {
               key={level.id}
               onClick={() => {
                 setSelectedLevel(level);
+                trackSelection('level', level.id, {
+                  label: level.name,
+                  display: level.name,
+                  property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                  sector: selectedSector?.id,
+                  tower_or_block: selectedTorre?.id,
+                  model: selectedModel?.id,
+                  selection_type: 'nivel'
+                });
                 navigateTo('unit_selection', 7);
               }}
               className="bg-white border-2 border-transparent hover:border-accent/10 rounded-[2rem] p-6 text-center flex flex-col items-center gap-2 shadow-sm active:ring-4 active:ring-accent/10 transition-all group"
@@ -1026,6 +1065,16 @@ const UnitSelectionScreen = () => {
             key={target.id}
             onClick={() => {
               setSelectedUnit(target);
+              trackSelection('unit_or_lot', target.id, {
+                label: target.label,
+                display: target.label,
+                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                sector: selectedSector?.id,
+                tower_or_block: selectedTorre?.id,
+                level: selectedLevel?.id,
+                model: selectedModel?.id,
+                selection_type: isApartments ? 'unidad' : 'lote'
+              });
               navigateTo('unit_detail', 8);
             }}
             className={`bg-white border-2 ${isApartments ? 'border-accent/10' : 'border-primary/10'} rounded-[2.5rem] p-10 text-center flex flex-col items-center justify-center gap-2 shadow-md active:scale-95 transition-all ${isApartments ? 'hover:border-accent' : 'hover:border-primary'} group`}
@@ -1121,7 +1170,20 @@ const UnitSelectionScreen = () => {
           </div>
 
           <button 
-            onClick={() => navigateTo('reservation_form', 9)}
+            onClick={() => {
+              trackSelection('unit_detail', selectedUnit?.id ?? 'sin_unidad', {
+                label: selectedUnit?.label,
+                display: selectedUnit?.label,
+                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                sector: selectedSector?.id,
+                tower_or_block: selectedTorre?.id,
+                level: selectedLevel?.id,
+                model: selectedModel?.id,
+                selection_type: isApartments ? 'unidad' : 'lote',
+                action: 'iniciar_pre_reserva'
+              });
+              navigateTo('reservation_form', 9);
+            }}
             className="w-full py-5 rounded-2xl bg-black text-white font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
           >
             INICIAR PRE-RESERVA <ArrowRight className="w-4 h-4" />
@@ -1230,7 +1292,20 @@ const UnitSelectionScreen = () => {
             <p className="text-sm font-bold text-secondary uppercase tracking-widest opacity-80 italic">Al confirmar, enviaremos esta selección a un asesor AMENA.</p>
           </div>
           <button 
-            onClick={() => navigateTo('further_steps', 10)}
+            onClick={() => {
+              trackSelection('confirmation', selectedUnit?.id ?? 'sin_unidad', {
+                label: selectedUnit?.label,
+                display: selectedUnit?.label,
+                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                sector: selectedSector?.id,
+                tower_or_block: selectedTorre?.id,
+                level: selectedLevel?.id,
+                model: selectedModel?.id,
+                selection_type: isApartments ? 'unidad' : 'lote',
+                action: 'confirmar_seleccion'
+              });
+              navigateTo('further_steps', 10);
+            }}
             className={`w-full py-8 rounded-[2rem] ${accentBg} text-white font-black uppercase text-xl tracking-widest shadow-2xl active:scale-95 transition-transform`}
           >
             CONFIRMAR SELECCIÓN
@@ -1263,6 +1338,19 @@ const UnitSelectionScreen = () => {
           <button 
             key={i}
             onClick={() => {
+              trackSelection('post_reservation_cta', item.id, {
+                label: item.label,
+                display: item.label,
+                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                sector: selectedSector?.id,
+                tower_or_block: selectedTorre?.id,
+                level: selectedLevel?.id,
+                model: selectedModel?.id,
+                unit_or_lot: selectedUnit?.id,
+                selection_type: selectedType === 'apartamentos' ? 'unidad' : 'lote',
+                target_screen: item.id,
+                target_step: item.step
+              });
               navigateTo(item.id as Screen, item.step);
             }}
             className="w-full p-8 bg-white border-[4px] border-accent hover:border-accent shadow-xl rounded-3xl text-left active:scale-[0.98] transition-all group"
