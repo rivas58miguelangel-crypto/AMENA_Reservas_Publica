@@ -82,6 +82,10 @@ export async function trackSelectionEvent(payload: {
   const stepName =
     payload.step === "housing_type"
       ? "tipo_propiedad"
+      : payload.step === "model"
+        ? "modelo"
+        : payload.step === "level"
+          ? "nivel"
       : payload.step === "tower_or_block"
         ? payload.metadata?.selection_type === "manzana"
           ? "manzana"
