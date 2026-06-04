@@ -114,6 +114,31 @@ export async function trackSelectionEvent(payload: {
   payload.step === "housing_type"
     ? (payload.value === "casas" ? "casa" : "apartamento")
     : payload.metadata?.property_type ?? null,
+    sector: payload.metadata?.sector ?? null,
+    block:
+      payload.metadata?.block ??
+      payload.metadata?.block_code ??
+      null,
+    tower:
+      payload.metadata?.tower ??
+      payload.metadata?.tower_code ??
+      null,
+    level:
+      payload.metadata?.level ??
+      payload.metadata?.level_code ??
+      null,
+    model_code:
+      payload.metadata?.model ??
+      payload.metadata?.model_code ??
+      null,
+    lot_number:
+      payload.metadata?.lot ??
+      payload.metadata?.lot_number ??
+      null,
+    unit_code:
+      payload.metadata?.unit ??
+      payload.metadata?.unit_code ??
+      null,
     raw_payload: {
       step: payload.step,
       value: payload.value,
