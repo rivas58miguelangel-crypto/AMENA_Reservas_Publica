@@ -118,10 +118,12 @@ export async function trackSelectionEvent(payload: {
     block:
       payload.metadata?.block ??
       payload.metadata?.block_code ??
+      (payload.metadata?.selection_type === "manzana" ? payload.metadata?.tower_or_block : null) ??
       null,
     tower:
       payload.metadata?.tower ??
       payload.metadata?.tower_code ??
+      (payload.metadata?.selection_type === "torre" ? payload.metadata?.tower_or_block : null) ??
       null,
     level:
       payload.metadata?.level ??
