@@ -37,12 +37,35 @@ type Screen =
   | 'further_steps'
   | 'acompanamiento_amena'
   | 'next_steps_instructions'
+  | 'whatsapp_confirmation'
+  | 'office_schedule'
+  | 'project_visit_schedule'
   | 'user_comments'
   | 'analysis_report'
   | 'digital_agent'
   | 'agent_call'
   | 'visit_schedule'
   | 'final_success';
+
+type MartaContactPreference = 'talk_now' | 'schedule_call' | 'whatsapp_link' | null;
+type ProjectVisitPreference = 'request_visit' | 'schedule_visit' | null;
+
+type PostReservationStatus = {
+  instructionsAcknowledged: boolean;
+  martaContactPreference: MartaContactPreference;
+  whatsappReceiptConfirmed: boolean;
+  salesOfficeAppointmentScheduled: boolean;
+  projectVisitPreference: ProjectVisitPreference;
+};
+
+const initialPostReservationStatus: PostReservationStatus = {
+  instructionsAcknowledged: false,
+  martaContactPreference: null,
+  whatsappReceiptConfirmed: false,
+  salesOfficeAppointmentScheduled: false,
+  projectVisitPreference: null,
+};
+
 const App: React.FC = () => {
   const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
   const hasStartedReservationSession = React.useRef(false);
@@ -101,8 +124,9 @@ const App: React.FC = () => {
   const [isModelGalleryOpen, setIsModelGalleryOpen] = useState(false);
   const [inspectingModel, setInspectingModel] = useState<Model | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [postReservationStatus, setPostReservationStatus] = useState<PostReservationStatus>(initialPostReservationStatus);
 
-  const totalSteps = 17;
+  const totalSteps = 15;
 
   const navigateTo = (newScreen: Screen, newStep: number) => {
     setScreen(newScreen);
@@ -130,6 +154,25 @@ const App: React.FC = () => {
     metadata,
   });
 };
+
+  const trackPostReservationEvent = (eventName: string, metadata?: Record<string, any>) => {
+    const postReservationEvent = {
+      event_name: eventName,
+      property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+      sector: selectedSector?.id,
+      tower_or_block: selectedTorre?.id,
+      level: selectedLevel?.id,
+      model: selectedModel?.id,
+      unit_or_lot: selectedUnit?.id,
+      selection_type: selectedType === 'apartamentos' ? 'unidad' : 'lote',
+      metadata: metadata ?? {},
+    };
+
+    if (import.meta.env.DEV) {
+      console.debug('[AMENA post-reservation event pending Supabase]', postReservationEvent);
+    }
+  };
+
   const handleLogout = () => {
     // Reset all states
     setStep(1);
@@ -142,6 +185,7 @@ const App: React.FC = () => {
     setSelectedModel(null);
     setSelectedUnit(null);
     setAnalysisResult(null);
+    setPostReservationStatus(initialPostReservationStatus);
     window.scrollTo(0, 0);
   };
 
@@ -158,14 +202,17 @@ const App: React.FC = () => {
     else if (screen === 'unit_detail') navigateTo('unit_selection', 7);
     else if (screen === 'reservation_form') navigateTo('unit_detail', 8);
     else if (screen === 'further_steps') navigateTo('reservation_form', 9);
-    else if (screen === 'acompanamiento_amena') navigateTo('further_steps', 10);
-    else if (screen === 'next_steps_instructions') navigateTo('further_steps', 10);
+    else if (screen === 'next_steps_instructions') navigateTo('reservation_form', 9);
+    else if (screen === 'acompanamiento_amena') navigateTo('next_steps_instructions', 10);
+    else if (screen === 'whatsapp_confirmation') navigateTo('acompanamiento_amena', 11);
+    else if (screen === 'office_schedule') navigateTo('whatsapp_confirmation', 12);
+    else if (screen === 'project_visit_schedule') navigateTo('office_schedule', 13);
     else if (screen === 'user_comments') navigateTo('further_steps', 10);
     else if (screen === 'analysis_report') navigateTo('user_comments', 12);
     else if (screen === 'digital_agent') navigateTo('further_steps', 10);
     else if (screen === 'agent_call') navigateTo('further_steps', 10);
     else if (screen === 'visit_schedule') navigateTo('further_steps', 10);
-    else if (screen === 'final_success') navigateTo('further_steps', 10);
+    else if (screen === 'final_success') navigateTo('project_visit_schedule', 14);
   };
 
   // --- Components ---
@@ -1304,7 +1351,8 @@ const UnitSelectionScreen = () => {
                 selection_type: isApartments ? 'unidad' : 'lote',
                 action: 'confirmar_seleccion'
               });
-              navigateTo('further_steps', 10);
+              setPostReservationStatus(initialPostReservationStatus);
+              navigateTo('next_steps_instructions', 10);
             }}
             className={`w-full py-8 rounded-[2rem] ${accentBg} text-white font-black uppercase text-xl tracking-widest shadow-2xl active:scale-95 transition-transform`}
           >
@@ -1377,63 +1425,62 @@ const UnitSelectionScreen = () => {
       className="p-8 pb-32"
     >
       <BackButton />
-      <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-6 tracking-tight uppercase">
-        Instrucciones Próximos Pasos
+      <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
+        Instrucciones post-reserva
       </h2>
+      <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
+        Antes de continuar, revisa estas indicaciones para mantener tu pre reserva ordenada y avanzar con pasos firmes.
+      </p>
       
       <div className="space-y-8">
         <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
           <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-accent" />
-            Documentos a Entregar
+            Interacciones generales / comunicación
           </h3>
-          <p className="text-[14px] font-medium text-secondary leading-snug">
+          <ul className="space-y-3">
+            <li className="text-[13px] font-bold text-primary/75 flex gap-2 leading-snug">
+              <Check className="w-4 h-4 text-accent shrink-0" /> Es vital tu compromiso en la atención de llamadas, WhatsApp y correos electrónicos para mantener la fluidez del proceso.
+            </li>
+            <li className="text-[13px] font-bold text-primary/75 flex gap-2 leading-snug">
+              <Check className="w-4 h-4 text-accent shrink-0" /> Solicitaremos referencias de instituciones financieras, comercios, laborales y personales para completar tu perfil.
+            </li>
+          </ul>
+        </section>
+
+        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
+          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-accent" />
+            Documentos
+          </h3>
+          <p className="text-[14px] font-medium text-secondary leading-snug mb-3">
             Preparación de la documentación legal y personal requerida para formalizar tu proceso de pre reserva.
+          </p>
+          <p className="text-[13px] font-bold text-primary/70 flex gap-2 leading-snug">
+            <Check className="w-4 h-4 text-accent shrink-0" /> Gestión de documentos y calendario de entrega.
           </p>
         </section>
 
         <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
           <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-accent" />
-            Capacidad Económica
+            Pagos y gestiones
           </h3>
           <div className="space-y-3">
             <p className="text-[14px] font-medium text-secondary leading-snug italic">
               Análisis profundo de tu realidad financiera para avanzar con pasos firmes.
             </p>
             <ul className="space-y-2">
-              <li className="text-[12px] font-bold text-primary/70 flex gap-2">
-                <Check className="w-4 h-4 text-accent shrink-0" /> Gestión de documentos y calendario de entrega.
-              </li>
-              <li className="text-[12px] font-bold text-primary/70 flex gap-2">
+              <li className="text-[13px] font-bold text-primary/70 flex gap-2 leading-snug">
                 <Check className="w-4 h-4 text-accent shrink-0" /> Planificación de desembolsos económicos.
               </li>
-              <li className="text-[12px] font-bold text-primary/70 flex gap-2">
-                <Check className="w-4 h-4 text-accent shrink-0" /> Identificación de restricciones y opciones de salida.
+              <li className="text-[13px] font-bold text-primary/70 flex gap-2 leading-snug">
+                <Check className="w-4 h-4 text-accent shrink-0" /> Evaluación detallada de condiciones crediticias y proyecciones de inversión.
+              </li>
+              <li className="text-[13px] font-bold text-primary/70 flex gap-2 leading-snug">
+                <Check className="w-4 h-4 text-accent shrink-0" /> Tiempo concedido para realizar todas las gestiones solicitadas.
               </li>
             </ul>
-          </div>
-        </section>
-
-        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            Análisis Financiero
-          </h3>
-          <p className="text-[14px] font-medium text-secondary leading-snug">
-            Evaluación detallada de las condiciones crediticias y proyecciones de inversión.
-          </p>
-        </section>
-
-        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            Período de Pre Reserva
-          </h3>
-          <div className="space-y-3">
-            <p className="text-[14px] font-medium text-secondary leading-snug">
-              Tiempo concedido para realizar todas las gestiones solicitadas.
-            </p>
             <div className="p-3 bg-accent/5 rounded-xl border border-accent/10">
               <p className="text-[11px] font-bold text-accent italic">
                 * Las extensiones de este período son excepcionales y se evaluarán según las circunstancias documentadas.
@@ -1441,39 +1488,19 @@ const UnitSelectionScreen = () => {
             </div>
           </div>
         </section>
-
-        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            Compromiso de Comunicación
-          </h3>
-          <p className="text-[14px] font-medium text-secondary leading-snug">
-            Es vital tu compromiso en la atención de llamadas, WhatsApp y correos electrónicos para mantener la fluidez del proceso.
-          </p>
-        </section>
-
-        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            Referencias Requeridas
-          </h3>
-          <p className="text-[14px] font-medium text-secondary leading-snug">
-            Solicitaremos referencias de instituciones financieras, comercios, laborales y personales para completar tu perfil.
-          </p>
-        </section>
-      </div>
-
-      <div className="mt-8 p-6 bg-accent/5 rounded-[2rem] border border-accent/10">
-        <p className="text-[14px] font-bold text-accent text-center italic">
-          Se ha enviado un registro de los comentarios del usuario y de nuestras interacciones al correo miguel@gmail.com
-        </p>
       </div>
 
       <button 
-        onClick={() => navigateTo('further_steps', 10)}
+        onClick={() => {
+          setPostReservationStatus((current) => ({ ...current, instructionsAcknowledged: true }));
+          trackPostReservationEvent('post_reservation_instructions_completed', {
+            next_required_step: 'marta_contact',
+          });
+          navigateTo('acompanamiento_amena', 11);
+        }}
         className="w-full mt-10 py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
-        ENTENDIDO, VOLVER <ArrowRight className="w-6 h-6" />
+        CONTINUAR <ArrowRight className="w-6 h-6" />
       </button>
     </motion.div>
   );
@@ -1689,7 +1716,7 @@ const UnitSelectionScreen = () => {
           </div>
 
           <button 
-            onClick={() => navigateTo('final_success', 17)}
+            onClick={() => navigateTo('final_success', 15)}
             className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform mt-8"
           >
             CONFIRMAR Y FINALIZAR <ArrowRight className="w-6 h-6" />
@@ -1715,6 +1742,15 @@ const UnitSelectionScreen = () => {
     const [showAccessNote, setShowAccessNote] = useState(false);
 
     const reservationId = selectedUnit?.id ? `AMENA-${selectedUnit.id.toUpperCase()}` : 'AMENA-RESERVA-DEMO';
+    const selectedMartaAction = postReservationStatus.martaContactPreference;
+
+    const chooseMartaAction = (preference: Exclude<MartaContactPreference, null>) => {
+      setPostReservationStatus((current) => ({ ...current, martaContactPreference: preference }));
+      trackPostReservationEvent('marta_contact_selected', {
+        marta_contact_preference: preference,
+        next_required_step: 'whatsapp_receipt_confirmation',
+      });
+    };
 
     return (
       <motion.div 
@@ -1726,7 +1762,7 @@ const UnitSelectionScreen = () => {
           Acompañamiento AMENA
         </h2>
         <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
-          Tu reserva ha sido registrada correctamente. Ahora puedes acceder a un acompañamiento flexible y personalizado para resolver dudas, compartir información importante y avanzar a tu propio ritmo.
+          Tu reserva ha sido registrada correctamente. Elige cómo deseas hablar con Marta para continuar el acompañamiento obligatorio de tu pre reserva.
         </p>
 
         <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm mb-8">
@@ -1735,11 +1771,11 @@ const UnitSelectionScreen = () => {
             Avanza con claridad, a tu ritmo
           </h3>
           <p className="text-[15px] font-bold text-secondary/80 leading-snug mb-5">
-            Marta puede atenderte por texto o voz desde el web widget. También podrás recibir un acceso privado por correo electrónico para entrar cuando lo desees, 24/7.
+            Marta puede atenderte por texto o voz desde el web widget, por llamada agendada o mediante un link privado enviado por WhatsApp.
           </p>
           <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
             <p className="text-[12px] font-bold text-primary/70 leading-snug">
-              Para acceder se utilizará el ID de tu reserva <span className="font-black text-primary">{reservationId}</span> y una clave privada enviada por correo electrónico.
+              Para acceder se utilizará el ID de tu reserva <span className="font-black text-primary">{reservationId}</span> y verificación de identidad antes de compartir información sensible.
             </p>
           </div>
         </section>
@@ -1752,27 +1788,33 @@ const UnitSelectionScreen = () => {
               Ingresa inmediatamente a tu espacio privado de Acompañamiento AMENA para conversar con Marta por texto o voz.
             </p>
             <button 
-              onClick={() => navigateTo('digital_agent', 14)}
+              onClick={() => {
+                chooseMartaAction('talk_now');
+                (window as any).conectarVapi?.();
+              }}
               className="px-6 py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform"
             >
-              Hablar con Marta
+              Hablar ahora con Marta
             </button>
           </section>
 
           <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
             <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 02</span>
-            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Agendar conversación con Marta</h3>
+            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Agendar llamada con Marta</h3>
             <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
               Si prefieres no conversar en este momento, podrás programar un horario más cómodo para continuar tu acompañamiento posteriormente.
             </p>
             <button 
-              onClick={() => setShowSchedule(!showSchedule)}
+              onClick={() => {
+                setShowSchedule(!showSchedule);
+                chooseMartaAction('schedule_call');
+              }}
               className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
             >
-              Agendar conversación
+              Agendar llamada
             </button>
             <p className="text-[12px] font-bold text-secondary/60 leading-snug mt-4">
-              Recibirás por correo electrónico tu acceso privado utilizando el ID de tu reserva y una clave privada de acceso.
+              Recibirás la llamada de Marta en el número y horario que prefieras.
             </p>
 
             {showSchedule && (
@@ -1786,14 +1828,14 @@ const UnitSelectionScreen = () => {
                   <input type="time" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">E-mail para recibir el acceso</label>
-                  <input type="email" placeholder="usuario@correo.com" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
+                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Número de teléfono móvil</label>
+                  <input type="text" placeholder="7060-0000" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
                 </div>
                 <button 
-                  onClick={() => setShowAccessNote(true)}
+                  onClick={() => chooseMartaAction('schedule_call')}
                   className="w-full py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest"
                 >
-                  Confirmar horario
+                  Confirmar llamada
                 </button>
               </motion.div>
             )}
@@ -1801,25 +1843,214 @@ const UnitSelectionScreen = () => {
 
           <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
             <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 03</span>
-            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Acceso flexible a Marta</h3>
+            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Recibir link por WhatsApp</h3>
             <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-              Aquí podrás llamarle tú a Marta en el momento que quieras. Tu espacio de Acompañamiento AMENA permanecerá disponible sin presión y a tu propio ritmo.
+              Te enviaremos un link privado por WhatsApp. Antes de abrir detalles sensibles de tu reserva, se hará una verificación de identidad.
             </p>
             <button 
-              onClick={() => setShowAccessNote(true)}
+              onClick={() => {
+                setShowAccessNote(true);
+                chooseMartaAction('whatsapp_link');
+              }}
               className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
             >
-              Recibir acceso privado
+              Solicitar link
             </button>
           </section>
 
           {showAccessNote && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-accent/5 rounded-[2rem] border border-accent/10">
               <p className="text-[13px] font-bold text-accent text-center leading-snug">
-                Simulación demo: se enviará al correo electrónico el link privado, el ID de reserva <span className="font-black">{reservationId}</span> y la clave privada de acceso para Acompañamiento AMENA.
+                Simulación demo: se enviará por WhatsApp el link privado asociado al ID de reserva <span className="font-black">{reservationId}</span>. Marta verificará tu identidad antes de compartir detalles completos.
               </p>
             </motion.div>
           )}
+        </div>
+
+        <button 
+          onClick={() => {
+            if (!selectedMartaAction) return;
+            navigateTo('whatsapp_confirmation', 12);
+          }}
+          disabled={!selectedMartaAction}
+          className="w-full mt-10 py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
+        >
+          CONTINUAR <ArrowRight className="w-6 h-6" />
+        </button>
+      </motion.div>
+    );
+  };
+
+  const WhatsAppConfirmationScreen = () => {
+    const [hasReceivedWhatsApp, setHasReceivedWhatsApp] = useState(postReservationStatus.whatsappReceiptConfirmed);
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+        className="p-8 pb-32"
+      >
+        <BackButton />
+        <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
+          Confirma tu WhatsApp
+        </h2>
+        <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
+          Para continuar, confirma que recibiste el mensaje de WhatsApp con los detalles relevantes de tu reserva.
+        </p>
+
+        <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm mb-8">
+          <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-4 py-2 rounded-full mb-5">Confirmación obligatoria</span>
+          <p className="text-[15px] font-bold text-secondary/80 leading-snug mb-6">
+            El mensaje debe incluir la referencia de tu pre reserva, la unidad seleccionada y el siguiente paso de contacto con AMENA.
+          </p>
+          <label className="flex items-start gap-4 p-5 rounded-2xl bg-primary/5 border border-primary/10 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hasReceivedWhatsApp}
+              onChange={(event) => setHasReceivedWhatsApp(event.target.checked)}
+              className="mt-1 w-5 h-5 accent-[var(--brand-accent)]"
+            />
+            <span className="text-[13px] font-black text-primary leading-snug">
+              Confirmo que recibí el WhatsApp con los detalles relevantes de mi reserva.
+            </span>
+          </label>
+        </section>
+
+        <button 
+          onClick={() => {
+            if (!hasReceivedWhatsApp) return;
+            setPostReservationStatus((current) => ({ ...current, whatsappReceiptConfirmed: true }));
+            trackPostReservationEvent('whatsapp_receipt_confirmed', {
+              next_required_step: 'sales_office_appointment',
+            });
+            navigateTo('office_schedule', 13);
+          }}
+          disabled={!hasReceivedWhatsApp}
+          className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
+        >
+          CONFIRMAR <ArrowRight className="w-6 h-6" />
+        </button>
+      </motion.div>
+    );
+  };
+
+  const OfficeScheduleScreen = () => (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+      className="p-8 pb-32"
+    >
+      <BackButton />
+      <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
+        Agenda cita en oficina de ventas
+      </h2>
+      <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
+        Esta cita servirá para conocernos, validar información, firmar documentos y recibir orientación sobre los siguientes pasos.
+      </p>
+
+      <div className="bg-[#f7f2eb] p-6 rounded-[2rem] border border-[#e8dfd1] mb-8">
+        <p className="text-[13px] font-black text-primary uppercase tracking-tight leading-tight">
+          Pre reserva registrada · {selectedType === 'apartamentos' ? 'Apartamento' : 'Casa'} {selectedUnit?.label || (selectedType === 'apartamentos' ? 'Apt 21' : 'L-01')} · {selectedType === 'apartamentos' ? 'Torre' : 'Manzana'} {selectedTorre?.label || (selectedType === 'apartamentos' ? 'T5' : 'MZ A')}
+        </p>
+      </div>
+
+      <div className="space-y-6 mb-12 text-left">
+        <div>
+          <label className="block text-[11px] font-black text-primary uppercase tracking-widest mb-2 px-1">Fecha deseada</label>
+          <input type="date" className="w-full p-5 rounded-2xl border-2 border-accent/10 focus:border-accent outline-none font-bold text-lg transition-all" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-black text-primary uppercase tracking-widest mb-2 px-1">Hora deseada</label>
+          <input type="time" className="w-full p-5 rounded-2xl border-2 border-accent/10 focus:border-accent outline-none font-bold text-lg transition-all" />
+        </div>
+      </div>
+
+      <button 
+        onClick={() => {
+          setPostReservationStatus((current) => ({ ...current, salesOfficeAppointmentScheduled: true }));
+          trackPostReservationEvent('sales_office_appointment_scheduled', {
+            appointment_location: 'sales_office',
+            next_required_step: 'project_visit',
+          });
+          navigateTo('project_visit_schedule', 14);
+        }}
+        className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
+      >
+        AGENDAR <ArrowRight className="w-6 h-6" />
+      </button>
+    </motion.div>
+  );
+
+  const ProjectVisitScheduleScreen = () => {
+    const [showVisitSchedule, setShowVisitSchedule] = useState(false);
+
+    const completeProjectVisitStep = (preference: Exclude<ProjectVisitPreference, null>) => {
+      setPostReservationStatus((current) => ({ ...current, projectVisitPreference: preference }));
+      trackPostReservationEvent('project_visit_step_completed', {
+        project_visit_preference: preference,
+        next_required_step: 'post_reservation_complete',
+      });
+      navigateTo('final_success', 15);
+    };
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+        className="p-8 pb-32"
+      >
+        <BackButton />
+        <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
+          Visita al proyecto
+        </h2>
+        <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
+          Este paso es más flexible: puedes solicitar que el equipo coordine contigo o agendar desde ahora una visita al proyecto.
+        </p>
+
+        <div className="space-y-6">
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 01</span>
+            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Solicitar visita</h3>
+            <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
+              El equipo de AMENA te contactará para coordinar la fecha y resolver cualquier detalle previo.
+            </p>
+            <button 
+              onClick={() => completeProjectVisitStep('request_visit')}
+              className="px-6 py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform"
+            >
+              Solicitar visita
+            </button>
+          </section>
+
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 02</span>
+            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Agendar visita</h3>
+            <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
+              Elige una fecha tentativa para conocer el proyecto con acompañamiento del equipo comercial.
+            </p>
+            <button 
+              onClick={() => setShowVisitSchedule(!showVisitSchedule)}
+              className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
+            >
+              Agendar
+            </button>
+
+            {showVisitSchedule && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-4 pt-6 border-t border-primary/10">
+                <div>
+                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Fecha deseada</label>
+                  <input type="date" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Hora deseada</label>
+                  <input type="time" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
+                </div>
+                <button 
+                  onClick={() => completeProjectVisitStep('schedule_visit')}
+                  className="w-full py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest"
+                >
+                  Confirmar visita
+                </button>
+              </motion.div>
+            )}
+          </section>
         </div>
       </motion.div>
     );
@@ -1908,7 +2139,7 @@ const UnitSelectionScreen = () => {
       </p>
 
       <button 
-        onClick={() => navigateTo('final_success', 17)}
+        onClick={() => navigateTo('final_success', 15)}
         className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
         CONFIRMAR LLAMADA
@@ -1954,7 +2185,7 @@ const UnitSelectionScreen = () => {
       </div>
 
       <button 
-        onClick={() => navigateTo('final_success', 17)}
+        onClick={() => navigateTo('final_success', 15)}
         className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
         CONFIRMAR CITA
@@ -1998,7 +2229,7 @@ const UnitSelectionScreen = () => {
           <span className="opacity-60">Unidad:</span> {selectedUnit?.label || 'Apt 21'}
         </p>
         <p className="text-[14px] font-black text-primary uppercase tracking-tight flex flex-wrap gap-x-2">
-           <span className="opacity-60">Acción:</span> Llamada agendada correctamente
+           <span className="opacity-60">Acción:</span> Flujo post-reserva completado
         </p>
       </div>
 
@@ -2052,6 +2283,9 @@ const UnitSelectionScreen = () => {
           {screen === 'further_steps' && <FurtherStepsScreen key="further" />}
           {screen === 'acompanamiento_amena' && <AcompanamientoAmenaScreen key="acompanamiento" />}
           {screen === 'next_steps_instructions' && <NextStepsInstructionsScreen key="instructions" />}
+          {screen === 'whatsapp_confirmation' && <WhatsAppConfirmationScreen key="whatsapp" />}
+          {screen === 'office_schedule' && <OfficeScheduleScreen key="office" />}
+          {screen === 'project_visit_schedule' && <ProjectVisitScheduleScreen key="project-visit" />}
           {screen === 'user_comments' && <UserCommentsScreen key="comments" />}
           {screen === 'analysis_report' && <AnalysisReportScreen key="report" />}
           {screen === 'digital_agent' && <DigitalAgentScreen key="agent" />}
