@@ -301,12 +301,14 @@ const App: React.FC = () => {
     </AnimatePresence>
   );
 
-  const ModelGalleryModal = ({ isOpen, onClose, models, onSelect }: { isOpen: boolean, onClose: () => void, models: Model[], onSelect: (m: Model) => void }) => {
+  const ModelGalleryModal = ({ isOpen, onClose, models }: { isOpen: boolean, onClose: () => void, models: Model[] }) => {
     const [currentModelIndex, setCurrentModelIndex] = useState(0);
+    const [hasReviewedAllModels, setHasReviewedAllModels] = useState(false);
 
     React.useEffect(() => {
       if (isOpen) {
         setCurrentModelIndex(0);
+        setHasReviewedAllModels(false);
       }
     }, [isOpen]);
 
@@ -388,15 +390,26 @@ const App: React.FC = () => {
                   onClick={() => {
                     if (currentModelIndex < models.length - 1) {
                       setCurrentModelIndex(currentModelIndex + 1);
+                      setHasReviewedAllModels(false);
                     } else {
-                      onSelect(model);
-                      onClose();
+                      setHasReviewedAllModels(true);
                     }
                   }}
                   className="w-full py-8 rounded-[2rem] bg-accent text-white font-black uppercase text-xl tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
                 >
-                  {currentModelIndex < models.length - 1 ? 'SIGUIENTE' : 'SELECCIONAR'} <ArrowRight className="w-6 h-6" />
+                  {currentModelIndex < models.length - 1 ? 'SIGUIENTE' : 'YA REVISÉ TODOS'} <ArrowRight className="w-6 h-6" />
                 </button>
+                {hasReviewedAllModels && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 8 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-4 rounded-2xl bg-white border border-accent/20 shadow-lg"
+                  >
+                    <p className="text-[13px] font-black text-primary text-center leading-snug">
+                      Ya revisaste todos los modelos. Cierra la galería y elige tu modelo preferido.
+                    </p>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -956,22 +969,6 @@ const App: React.FC = () => {
           isOpen={isModelGalleryOpen}
           onClose={() => setIsModelGalleryOpen(false)}
           models={models}
-          onSelect={(model) => {
-            setSelectedModel(model);
-            trackSelection('model', model.id, {
-              label: model.name,
-              display: model.name,
-              property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
-              sector: selectedSector?.id,
-              tower_or_block: selectedTorre?.id,
-              selection_type: 'modelo',
-              source: 'model_gallery',
-              price: model.price,
-              area: model.area
-            });
-            if (isApartments) navigateTo('level_selection', 6);
-            else navigateTo('unit_selection', 7);
-          }}
         />
       </motion.div>
     );
@@ -1572,7 +1569,7 @@ const UnitSelectionScreen = () => {
           Comentarios del Interesado
         </h2>
         <p className="text-secondary font-bold text-sm mb-8 opacity-70">
-          Comparte tu visión y documentos para un análisis inteligente de tu pre reserva.
+          El email es obligatorio. Los comentarios y archivos son opcionales.
         </p>
 
         <div className="space-y-6">
@@ -1754,6 +1751,7 @@ const UnitSelectionScreen = () => {
   const AcompanamientoAmenaScreen = () => {
     const [showSchedule, setShowSchedule] = useState(false);
     const [showAccessNote, setShowAccessNote] = useState(false);
+    const [scheduleConfirmed, setScheduleConfirmed] = useState(false);
 
     const reservationId = selectedUnit?.id ? `AMENA-${selectedUnit.id.toUpperCase()}` : 'AMENA-RESERVA-DEMO';
     const selectedMartaAction = postReservationStatus.martaContactPreference;
@@ -1803,6 +1801,9 @@ const UnitSelectionScreen = () => {
             </p>
             <button 
               onClick={() => {
+                setShowSchedule(false);
+                setShowAccessNote(false);
+                setScheduleConfirmed(false);
                 chooseMartaAction('talk_now');
                 (window as any).conectarVapi?.();
               }}
@@ -1820,7 +1821,9 @@ const UnitSelectionScreen = () => {
             </p>
             <button 
               onClick={() => {
-                setShowSchedule(!showSchedule);
+                setShowSchedule(true);
+                setShowAccessNote(false);
+                setScheduleConfirmed(false);
                 chooseMartaAction('schedule_call');
               }}
               className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
@@ -1833,6 +1836,7 @@ const UnitSelectionScreen = () => {
 
             {showSchedule && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-4 pt-6 border-t border-primary/10">
+                <h4 className="text-[13px] font-black text-primary uppercase tracking-widest">Formulario de llamada</h4>
                 <div>
                   <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Día preferido</label>
                   <input type="date" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
@@ -1846,11 +1850,21 @@ const UnitSelectionScreen = () => {
                   <input type="text" placeholder="7060-0000" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
                 </div>
                 <button 
-                  onClick={() => chooseMartaAction('schedule_call')}
+                  onClick={() => {
+                    setScheduleConfirmed(true);
+                    chooseMartaAction('schedule_call');
+                  }}
                   className="w-full py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest"
                 >
                   Confirmar llamada
                 </button>
+                {scheduleConfirmed && (
+                  <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                    <p className="text-[13px] font-bold text-accent text-center leading-snug">
+                      Tu solicitud de llamada con Marta quedó preparada. Puedes continuar al siguiente paso.
+                    </p>
+                  </div>
+                )}
               </motion.div>
             )}
           </section>
@@ -1859,11 +1873,13 @@ const UnitSelectionScreen = () => {
             <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 03</span>
             <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Recibir link por WhatsApp</h3>
             <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-              Te enviaremos un link privado por WhatsApp. Antes de abrir detalles sensibles de tu reserva, se hará una verificación de identidad.
+              Te enviaremos un link privado por WhatsApp para hablar con Marta más adelante o iniciar contacto posteriormente.
             </p>
             <button 
               onClick={() => {
                 setShowAccessNote(true);
+                setShowSchedule(false);
+                setScheduleConfirmed(false);
                 chooseMartaAction('whatsapp_link');
               }}
               className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
@@ -1875,7 +1891,7 @@ const UnitSelectionScreen = () => {
           {showAccessNote && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-accent/5 rounded-[2rem] border border-accent/10">
               <p className="text-[13px] font-bold text-accent text-center leading-snug">
-                Simulación demo: se enviará por WhatsApp el link privado asociado al ID de reserva <span className="font-black">{reservationId}</span>. Marta verificará tu identidad antes de compartir detalles completos.
+                Simulación demo: se enviará por WhatsApp el link privado asociado al ID de reserva <span className="font-black">{reservationId}</span>. Podrás hablar con Marta más adelante o iniciar contacto posteriormente con verificación de identidad.
               </p>
             </motion.div>
           )}
@@ -2277,8 +2293,22 @@ const UnitSelectionScreen = () => {
       </div>
 
       <button 
+        onClick={() => navigateTo('next_steps_instructions', 10)}
+        className="w-full py-6 mt-12 rounded-2xl bg-accent text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
+      >
+        REVISAR PASOS FINALES
+      </button>
+
+      <button 
+        onClick={() => navigateTo('acompanamiento_amena', 12)}
+        className="w-full py-6 mt-4 rounded-2xl bg-white border-2 border-accent/20 text-accent font-black uppercase text-xs tracking-widest shadow-sm active:scale-95 transition-transform"
+      >
+        CONTACTAR A MARTA
+      </button>
+
+      <button 
         onClick={() => navigateTo('welcome', 1)}
-        className="w-full py-6 mt-12 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
+        className="w-full py-6 mt-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
       >
         VOLVER AL INICIO
       </button>
