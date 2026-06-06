@@ -1490,13 +1490,13 @@ const UnitSelectionScreen = () => {
         </section>
       </div>
 
-      <button 
+      <button
         onClick={() => {
           setPostReservationStatus((current) => ({ ...current, instructionsAcknowledged: true }));
           trackPostReservationEvent('post_reservation_instructions_completed', {
-            next_required_step: 'marta_contact',
+            next_required_step: 'user_comments',
           });
-          navigateTo('acompanamiento_amena', 11);
+          navigateTo('user_comments', 11);
         }}
         className="w-full mt-10 py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
@@ -1716,7 +1716,13 @@ const UnitSelectionScreen = () => {
           </div>
 
           <button 
-            onClick={() => navigateTo('final_success', 15)}
+            onClick={() => {
+              trackPostReservationEvent('comments_analysis_completed', {
+                next_required_step: 'marta_contact',
+              });
+
+              navigateTo('acompanamiento_amena', 12);
+            }}
             className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform mt-8"
           >
             CONFIRMAR Y FINALIZAR <ArrowRight className="w-6 h-6" />
@@ -2139,7 +2145,13 @@ const UnitSelectionScreen = () => {
       </p>
 
       <button 
-        onClick={() => navigateTo('final_success', 15)}
+        onClick={() => {
+              trackPostReservationEvent('comments_analysis_completed', {
+                next_required_step: 'marta_contact',
+              });
+
+              navigateTo('acompanamiento_amena', 12);
+            }}
         className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
         CONFIRMAR LLAMADA
@@ -2185,7 +2197,13 @@ const UnitSelectionScreen = () => {
       </div>
 
       <button 
-        onClick={() => navigateTo('final_success', 15)}
+        onClick={() => {
+              trackPostReservationEvent('comments_analysis_completed', {
+                next_required_step: 'marta_contact',
+              });
+
+              navigateTo('acompanamiento_amena', 12);
+            }}
         className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
         CONFIRMAR CITA
@@ -2325,3 +2343,4 @@ imageUrl="./manzanas/Sector01Manzanas.png"
 };
 
 export default App;
+
