@@ -264,13 +264,14 @@ const App: React.FC = () => {
       {isOpen && (
         <motion.div 
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col p-6"
+          className="fixed inset-0 z-[180] bg-black/90 backdrop-blur-md flex flex-col p-6"
         >
-          <div className="flex justify-between items-center mb-8">
+          <div className="relative z-[190] flex justify-between items-center mb-8">
             <h3 className="text-white text-xl font-black uppercase tracking-widest">{title}</h3>
             <button 
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white"
+              aria-label="Cerrar modal"
+              className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-primary shadow-lg hover:bg-white transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
@@ -338,8 +339,8 @@ const App: React.FC = () => {
                 ))}
               </div>
 
-              <div className="absolute top-8 right-8 z-20">
-                <button onClick={onClose} className="w-12 h-12 rounded-full flex items-center justify-center text-primary/30 hover:bg-black/5 transition-colors">
+              <div className="absolute top-8 right-8 z-[190]">
+                <button onClick={onClose} aria-label="Cerrar galería de modelos" className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center text-primary shadow-lg hover:bg-white transition-colors">
                   <X className="w-8 h-8" />
                 </button>
               </div>
@@ -422,8 +423,8 @@ const App: React.FC = () => {
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               className="relative w-full max-w-[500px] h-[92vh] bg-[#f2f2eb] shadow-2xl rounded-[4rem] overflow-hidden flex flex-col mx-4 sm:mx-0"
             >
-              <div className="absolute top-6 right-6 z-10">
-                <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-primary">
+              <div className="absolute top-6 right-6 z-[190]">
+                <button onClick={onClose} aria-label="Cerrar detalle de modelo" className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-primary shadow-lg hover:bg-white transition-colors">
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -968,6 +969,8 @@ const App: React.FC = () => {
               price: model.price,
               area: model.area
             });
+            if (isApartments) navigateTo('level_selection', 6);
+            else navigateTo('unit_selection', 7);
           }}
         />
       </motion.div>
@@ -1531,16 +1534,21 @@ const UnitSelectionScreen = () => {
     };
 
     const runAnalysis = () => {
-      if (!email || blocks.some(b => !b.title || !b.text)) {
-        alert("Por favor completa tu email y todos los bloques de comentarios.");
+      const trimmedEmail = email.trim();
+      const submittedBlocks = blocks.filter((block) => 
+        block.title.trim() || block.text.trim() || block.attachments.length > 0
+      );
+
+      if (!trimmedEmail) {
+        alert("Por favor completa tu email.");
         return;
       }
       setIsAnalyzing(true);
       setTimeout(() => {
         setIsAnalyzing(false);
         const result = {
-          email,
-          blocks,
+          email: trimmedEmail,
+          blocks: submittedBlocks,
           analysis: "Basado en tu información, existe una PROBABILIDAD ALTA (85%) de éxito en tu trámite si se siguen las recomendaciones adjuntas.",
           options: [
             { title: "Opción de Financiamiento Directo", detail: "Aprovecha la tasa preferencial AMENA para clientes con tu perfil laboral." },
@@ -2336,6 +2344,14 @@ const UnitSelectionScreen = () => {
   title="Manzanas disponibles"
 imageUrl="./manzanas/Sector01Manzanas.png"
   message="Visualiza las manzanas activas dentro del sector seleccionado."
+/>
+
+<ImageModal
+  isOpen={isLotesModalOpen}
+  onClose={() => setIsLotesModalOpen(false)}
+  title="Lotes disponibles"
+  imageUrl="./lotes/casalote.png"
+  message="Visualiza los lotes disponibles dentro de la manzana seleccionada."
 />
 
 </div>
