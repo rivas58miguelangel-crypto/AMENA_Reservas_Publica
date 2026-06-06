@@ -207,7 +207,7 @@ const App: React.FC = () => {
     else if (screen === 'whatsapp_confirmation') navigateTo('acompanamiento_amena', 11);
     else if (screen === 'office_schedule') navigateTo('whatsapp_confirmation', 12);
     else if (screen === 'project_visit_schedule') navigateTo('office_schedule', 13);
-    else if (screen === 'user_comments') navigateTo('further_steps', 10);
+    else if (screen === 'user_comments') navigateTo('next_steps_instructions', 10);
     else if (screen === 'analysis_report') navigateTo('user_comments', 12);
     else if (screen === 'digital_agent') navigateTo('further_steps', 10);
     else if (screen === 'agent_call') navigateTo('further_steps', 10);
@@ -257,6 +257,12 @@ const App: React.FC = () => {
     >
       <ChevronLeft className="w-4 h-4" /> REGRESAR
     </button>
+  );
+
+  const PostReservationStepBadge = ({ current }: { current: number }) => (
+    <div className="inline-flex items-center px-3 py-1 rounded-full bg-accent/10 text-accent text-[10px] font-black uppercase tracking-widest mb-4">
+      Paso {current} de 9
+    </div>
   );
 
   const ImageModal = ({ isOpen, onClose, title, imageUrl, message }: { isOpen: boolean, onClose: () => void, title: string, imageUrl?: string, message?: string }) => (
@@ -1283,6 +1289,7 @@ const UnitSelectionScreen = () => {
         className="p-8"
       >
         <BackButton />
+        <PostReservationStepBadge current={1} />
         <h2 className={`text-[32px] font-black ${accentColor} leading-none mb-4 tracking-tight uppercase`}>
           Confirma tu Interés
         </h2>
@@ -1425,6 +1432,7 @@ const UnitSelectionScreen = () => {
       className="p-8 pb-32"
     >
       <BackButton />
+      <PostReservationStepBadge current={2} />
       <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
         Instrucciones post-reserva
       </h2>
@@ -1511,6 +1519,7 @@ const UnitSelectionScreen = () => {
       { title: '', text: '', attachments: [] }
     ]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [commentsChoice, setCommentsChoice] = useState<'yes' | 'no' | null>(null);
 
     const addBlock = () => {
       setBlocks([...blocks, { title: '', text: '', attachments: [] }]);
@@ -1530,6 +1539,27 @@ const UnitSelectionScreen = () => {
       setBlocks(newBlocks);
     };
 
+    const buildAnalysisResult = (resultEmail: string, submittedBlocks: typeof blocks) => ({
+      email: resultEmail,
+      blocks: submittedBlocks,
+      analysis: submittedBlocks.length > 0
+        ? "Basado en tu información, existe una PROBABILIDAD ALTA (85%) de éxito en tu trámite si se siguen las recomendaciones adjuntas."
+        : "No registraste comentarios adicionales en este momento. AMENA continuará el acompañamiento con la información de tu pre reserva.",
+      options: [
+        { title: "Opción de Financiamiento Directo", detail: "Aprovecha la tasa preferencial AMENA para clientes con tu perfil laboral." },
+        { title: "Optimización de Espacios", detail: "Se recomienda el modelo con balcón extendido para mayor ventilación natural." },
+        { title: "Calendario de Documentación", detail: "Entrega tu constancia salarial antes del día 15 para congelar la tasa." }
+      ],
+      recommendation: submittedBlocks.length > 0
+        ? "SE RECOMIENDA SEGUIR EL TRÁMITE CON FIRMEZA. Tu capacidad económica y estabilidad referenciada son compatibles con los requerimientos del proyecto."
+        : "Puedes continuar el proceso sin comentarios adicionales. El equipo de AMENA podrá contactarte en los pasos posteriores si necesita ampliar información."
+    });
+
+    const continueWithoutComments = () => {
+      setAnalysisResult(buildAnalysisResult('', []));
+      navigateTo('analysis_report', 13);
+    };
+
     const runAnalysis = () => {
       const trimmedEmail = email.trim();
       const submittedBlocks = blocks.filter((block) => 
@@ -1543,18 +1573,7 @@ const UnitSelectionScreen = () => {
       setIsAnalyzing(true);
       setTimeout(() => {
         setIsAnalyzing(false);
-        const result = {
-          email: trimmedEmail,
-          blocks: submittedBlocks,
-          analysis: "Basado en tu información, existe una PROBABILIDAD ALTA (85%) de éxito en tu trámite si se siguen las recomendaciones adjuntas.",
-          options: [
-            { title: "Opción de Financiamiento Directo", detail: "Aprovecha la tasa preferencial AMENA para clientes con tu perfil laboral." },
-            { title: "Optimización de Espacios", detail: "Se recomienda el modelo con balcón extendido para mayor ventilación natural." },
-            { title: "Calendario de Documentación", detail: "Entrega tu constancia salarial antes del día 15 para congelar la tasa." }
-          ],
-          recommendation: "SE RECOMIENDA SEGUIR EL TRÁMITE CON FIRMEZA. Tu capacidad económica y estabilidad referenciada son compatibles con los requerimientos del proyecto."
-        };
-        setAnalysisResult(result);
+        setAnalysisResult(buildAnalysisResult(trimmedEmail, submittedBlocks));
         navigateTo('analysis_report', 13);
       }, 3000);
     };
@@ -1565,16 +1584,73 @@ const UnitSelectionScreen = () => {
         className="p-8 pb-32"
       >
         <BackButton />
+        <PostReservationStepBadge current={3} />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-2 tracking-tight uppercase">
           Comentarios del Interesado
         </h2>
         <p className="text-secondary font-bold text-sm mb-8 opacity-70">
-          El email es obligatorio. Los comentarios y archivos son opcionales.
+          Decide si deseas agregar información adicional antes de continuar.
         </p>
 
+        {!commentsChoice && (
+          <div className="space-y-6">
+            <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
+              <h3 className="text-[22px] font-black text-primary leading-tight mb-4">
+                ¿Deseas compartir comentarios, dudas o documentos adicionales?
+              </h3>
+              <p className="text-[14px] font-bold text-secondary/70 leading-snug mb-6">
+                Puedes continuar sin agregar información adicional o compartir detalles para enriquecer el análisis.
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => setCommentsChoice('yes')}
+                  className="w-full py-5 rounded-2xl bg-accent text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform"
+                >
+                  Sí, deseo agregar comentarios
+                </button>
+                <button
+                  onClick={() => setCommentsChoice('no')}
+                  className="w-full py-5 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
+                >
+                  No deseo agregar comentarios ahora
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {commentsChoice === 'no' && (
+          <div className="space-y-6">
+            <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
+              <h3 className="text-[22px] font-black text-primary leading-tight mb-4">
+                Continuar sin comentarios
+              </h3>
+              <p className="text-[14px] font-bold text-secondary/70 leading-snug">
+                No se solicitará email, comentarios ni archivos en este paso. Puedes regresar o avanzar al análisis demo del flujo.
+              </p>
+            </section>
+            <button
+              onClick={handleBack}
+              className="w-full py-5 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
+            >
+              REGRESAR
+            </button>
+            <button
+              onClick={continueWithoutComments}
+              className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
+            >
+              CONTINUAR <ArrowRight className="w-6 h-6" />
+            </button>
+          </div>
+        )}
+
+        {commentsChoice === 'yes' && (
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-[2rem] border-2 border-accent/10 shadow-lg">
             <label className="block text-[11px] font-black text-primary uppercase tracking-widest mb-2 px-1">Tu E-mail para reportes</label>
+            <p className="text-[12px] font-bold text-secondary/60 mb-4">
+              Email obligatorio en esta opción. Comentarios y archivos opcionales.
+            </p>
             <input 
               type="email" 
               value={email}
@@ -1649,6 +1725,7 @@ const UnitSelectionScreen = () => {
             )}
           </button>
         </div>
+        )}
       </motion.div>
     );
   };
@@ -1662,6 +1739,7 @@ const UnitSelectionScreen = () => {
         className="p-8 pb-32"
       >
         <BackButton />
+        <PostReservationStepBadge current={4} />
         <h2 className="text-[32px] font-black text-primary leading-[1.1] mb-2 tracking-tight uppercase">
           Análisis de Opciones
         </h2>
@@ -1709,14 +1787,18 @@ const UnitSelectionScreen = () => {
                   <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
                     <Check className="w-3 h-3 text-accent" />
                   </div>
-                  <p className="text-[12px] font-bold text-primary">Copia de este reporte enviada a {analysisResult.email}.</p>
+                  <p className="text-[12px] font-bold text-primary">
+                    {analysisResult.email ? `Copia de este reporte enviada a ${analysisResult.email}.` : 'No se registró un correo adicional en este paso.'}
+                  </p>
                 </div>
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3 text-accent" />
+                {analysisResult.email && (
+                  <div className="flex gap-3">
+                    <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-accent" />
+                    </div>
+                    <p className="text-[12px] font-bold text-primary">Se ha enviado un registro de tus comentarios y de nuestras interacciones al correo {analysisResult.email}.</p>
                   </div>
-                  <p className="text-[12px] font-bold text-primary">Se ha enviado un registro de tus comentarios y de nuestras interacciones al correo {analysisResult.email}.</p>
-                </div>
+                )}
              </div>
           </div>
 
@@ -1751,10 +1833,12 @@ const UnitSelectionScreen = () => {
   const AcompanamientoAmenaScreen = () => {
     const [showSchedule, setShowSchedule] = useState(false);
     const [showAccessNote, setShowAccessNote] = useState(false);
-    const [scheduleConfirmed, setScheduleConfirmed] = useState(false);
+    const [scheduleConfirmed, setScheduleConfirmed] = useState(postReservationStatus.martaContactPreference === 'schedule_call');
+    const [whatsappLinkConfirmed, setWhatsappLinkConfirmed] = useState(postReservationStatus.martaContactPreference === 'whatsapp_link');
 
     const reservationId = selectedUnit?.id ? `AMENA-${selectedUnit.id.toUpperCase()}` : 'AMENA-RESERVA-DEMO';
     const selectedMartaAction = postReservationStatus.martaContactPreference;
+    const canContinueMarta = selectedMartaAction === 'talk_now' || scheduleConfirmed || whatsappLinkConfirmed;
 
     const chooseMartaAction = (preference: Exclude<MartaContactPreference, null>) => {
       setPostReservationStatus((current) => ({ ...current, martaContactPreference: preference }));
@@ -1770,6 +1854,7 @@ const UnitSelectionScreen = () => {
         className="p-8 pb-32"
       >
         <BackButton />
+        <PostReservationStepBadge current={5} />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-6 tracking-tight uppercase">
           Acompañamiento AMENA
         </h2>
@@ -1804,6 +1889,7 @@ const UnitSelectionScreen = () => {
                 setShowSchedule(false);
                 setShowAccessNote(false);
                 setScheduleConfirmed(false);
+                setWhatsappLinkConfirmed(false);
                 chooseMartaAction('talk_now');
                 (window as any).conectarVapi?.();
               }}
@@ -1824,7 +1910,8 @@ const UnitSelectionScreen = () => {
                 setShowSchedule(true);
                 setShowAccessNote(false);
                 setScheduleConfirmed(false);
-                chooseMartaAction('schedule_call');
+                setWhatsappLinkConfirmed(false);
+                setPostReservationStatus((current) => ({ ...current, martaContactPreference: null }));
               }}
               className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
             >
@@ -1852,6 +1939,7 @@ const UnitSelectionScreen = () => {
                 <button 
                   onClick={() => {
                     setScheduleConfirmed(true);
+                    setWhatsappLinkConfirmed(false);
                     chooseMartaAction('schedule_call');
                   }}
                   className="w-full py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest"
@@ -1880,6 +1968,7 @@ const UnitSelectionScreen = () => {
                 setShowAccessNote(true);
                 setShowSchedule(false);
                 setScheduleConfirmed(false);
+                setWhatsappLinkConfirmed(true);
                 chooseMartaAction('whatsapp_link');
               }}
               className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
@@ -1899,10 +1988,10 @@ const UnitSelectionScreen = () => {
 
         <button 
           onClick={() => {
-            if (!selectedMartaAction) return;
+            if (!canContinueMarta) return;
             navigateTo('whatsapp_confirmation', 12);
           }}
-          disabled={!selectedMartaAction}
+          disabled={!canContinueMarta}
           className="w-full mt-10 py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
         >
           CONTINUAR <ArrowRight className="w-6 h-6" />
@@ -1920,6 +2009,7 @@ const UnitSelectionScreen = () => {
         className="p-8 pb-32"
       >
         <BackButton />
+        <PostReservationStepBadge current={6} />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
           Confirma tu WhatsApp
         </h2>
@@ -1969,6 +2059,7 @@ const UnitSelectionScreen = () => {
       className="p-8 pb-32"
     >
       <BackButton />
+      <PostReservationStepBadge current={7} />
       <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
         Agenda cita en oficina de ventas
       </h2>
@@ -2027,6 +2118,7 @@ const UnitSelectionScreen = () => {
         className="p-8 pb-32"
       >
         <BackButton />
+        <PostReservationStepBadge current={8} />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
           Visita al proyecto
         </h2>
@@ -2248,6 +2340,7 @@ const UnitSelectionScreen = () => {
           <ChevronLeft className="w-4 h-4" /> REGRESAR AL INICIO
         </button>
       </div>
+      <PostReservationStepBadge current={9} />
       <h2 className="text-[40px] font-black text-accent leading-none mb-6 tracking-tight uppercase">
         Proceso finalizado correctamente
       </h2>
