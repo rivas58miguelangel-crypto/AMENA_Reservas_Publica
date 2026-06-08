@@ -69,6 +69,7 @@ const initialPostReservationStatus: PostReservationStatus = {
 const App: React.FC = () => {
   const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
   const hasStartedReservationSession = React.useRef(false);
+  const martaScheduleDraftOpen = React.useRef(false);
 
   React.useEffect(() => {
     document.documentElement.style.setProperty('--brand-primary', projectBranding.primaryColor);
@@ -186,6 +187,7 @@ const App: React.FC = () => {
     setSelectedUnit(null);
     setAnalysisResult(null);
     setPostReservationStatus(initialPostReservationStatus);
+    martaScheduleDraftOpen.current = false;
     window.scrollTo(0, 0);
   };
 
@@ -259,11 +261,7 @@ const App: React.FC = () => {
     </button>
   );
 
-  const PostReservationStepBadge = ({ current }: { current: number }) => (
-    <div className="inline-flex items-center px-3 py-1 rounded-full bg-accent/10 text-accent text-[10px] font-black uppercase tracking-widest mb-4">
-      Paso {current} de 9
-    </div>
-  );
+  const PostReservationStepBadge = (_props?: { current?: number }) => null;
 
   const ImageModal = ({ isOpen, onClose, title, imageUrl, message }: { isOpen: boolean, onClose: () => void, title: string, imageUrl?: string, message?: string }) => (
     <AnimatePresence>
@@ -1831,8 +1829,10 @@ const UnitSelectionScreen = () => {
   };
 
   const AcompanamientoAmenaScreen = () => {
-    const [showSchedule, setShowSchedule] = useState(false);
-    const [showAccessNote, setShowAccessNote] = useState(false);
+    const [showSchedule, setShowSchedule] = useState(
+      martaScheduleDraftOpen.current || postReservationStatus.martaContactPreference === 'schedule_call'
+    );
+    const [showAccessNote, setShowAccessNote] = useState(postReservationStatus.martaContactPreference === 'whatsapp_link');
     const [scheduleConfirmed, setScheduleConfirmed] = useState(postReservationStatus.martaContactPreference === 'schedule_call');
     const [whatsappLinkConfirmed, setWhatsappLinkConfirmed] = useState(postReservationStatus.martaContactPreference === 'whatsapp_link');
 
@@ -1868,7 +1868,7 @@ const UnitSelectionScreen = () => {
             Avanza con claridad, a tu ritmo
           </h3>
           <p className="text-[15px] font-bold text-secondary/80 leading-snug mb-5">
-            Marta puede atenderte por texto o voz desde el web widget, por llamada agendada o mediante un link privado enviado por WhatsApp.
+            Marta puede atenderte por texto o voz desde el espacio privado de Acompañamiento AMENA, preparar una llamada o generar un link privado por WhatsApp.
           </p>
           <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
             <p className="text-[12px] font-bold text-primary/70 leading-snug">
@@ -1886,6 +1886,7 @@ const UnitSelectionScreen = () => {
             </p>
             <button 
               onClick={() => {
+                martaScheduleDraftOpen.current = false;
                 setShowSchedule(false);
                 setShowAccessNote(false);
                 setScheduleConfirmed(false);
@@ -1907,11 +1908,16 @@ const UnitSelectionScreen = () => {
             </p>
             <button 
               onClick={() => {
+                martaScheduleDraftOpen.current = true;
                 setShowSchedule(true);
                 setShowAccessNote(false);
                 setScheduleConfirmed(false);
                 setWhatsappLinkConfirmed(false);
-                setPostReservationStatus((current) => ({ ...current, martaContactPreference: null }));
+                setPostReservationStatus((current) => (
+                  current.martaContactPreference === null
+                    ? current
+                    : { ...current, martaContactPreference: null }
+                ));
               }}
               className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
             >
@@ -1938,8 +1944,10 @@ const UnitSelectionScreen = () => {
                 </div>
                 <button 
                   onClick={() => {
+                    martaScheduleDraftOpen.current = true;
                     setScheduleConfirmed(true);
                     setWhatsappLinkConfirmed(false);
+                    setShowAccessNote(false);
                     chooseMartaAction('schedule_call');
                   }}
                   className="w-full py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest"
@@ -1965,6 +1973,7 @@ const UnitSelectionScreen = () => {
             </p>
             <button 
               onClick={() => {
+                martaScheduleDraftOpen.current = false;
                 setShowAccessNote(true);
                 setShowSchedule(false);
                 setScheduleConfirmed(false);
@@ -1980,7 +1989,7 @@ const UnitSelectionScreen = () => {
           {showAccessNote && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-accent/5 rounded-[2rem] border border-accent/10">
               <p className="text-[13px] font-bold text-accent text-center leading-snug">
-                Simulación demo: se enviará por WhatsApp el link privado asociado al ID de reserva <span className="font-black">{reservationId}</span>. Podrás hablar con Marta más adelante o iniciar contacto posteriormente con verificación de identidad.
+                Se preparó el envío del link privado por WhatsApp asociado a tu ID de reserva. Podrás hablar con Marta más adelante con verificación de identidad.
               </p>
             </motion.div>
           )}
@@ -2102,14 +2111,17 @@ const UnitSelectionScreen = () => {
 
   const ProjectVisitScheduleScreen = () => {
     const [showVisitSchedule, setShowVisitSchedule] = useState(false);
+    const [confirmedProjectVisitPreference, setConfirmedProjectVisitPreference] = useState<ProjectVisitPreference>(
+      postReservationStatus.projectVisitPreference === 'schedule_visit' ? 'schedule_visit' : null
+    );
 
     const completeProjectVisitStep = (preference: Exclude<ProjectVisitPreference, null>) => {
+      setConfirmedProjectVisitPreference(preference);
       setPostReservationStatus((current) => ({ ...current, projectVisitPreference: preference }));
       trackPostReservationEvent('project_visit_step_completed', {
         project_visit_preference: preference,
         next_required_step: 'post_reservation_complete',
       });
-      navigateTo('final_success', 15);
     };
 
     return (
@@ -2123,26 +2135,12 @@ const UnitSelectionScreen = () => {
           Visita al proyecto
         </h2>
         <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
-          Este paso es más flexible: puedes solicitar que el equipo coordine contigo o agendar desde ahora una visita al proyecto.
+          Agenda una fecha tentativa para conocer el proyecto con acompañamiento del equipo comercial.
         </p>
 
         <div className="space-y-6">
           <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
-            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 01</span>
-            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Solicitar visita</h3>
-            <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-              El equipo de AMENA te contactará para coordinar la fecha y resolver cualquier detalle previo.
-            </p>
-            <button 
-              onClick={() => completeProjectVisitStep('request_visit')}
-              className="px-6 py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform"
-            >
-              Solicitar visita
-            </button>
-          </section>
-
-          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
-            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 02</span>
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción principal</span>
             <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Agendar visita</h3>
             <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
               Elige una fecha tentativa para conocer el proyecto con acompañamiento del equipo comercial.
@@ -2170,10 +2168,26 @@ const UnitSelectionScreen = () => {
                 >
                   Confirmar visita
                 </button>
+                {confirmedProjectVisitPreference === 'schedule_visit' && (
+                  <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                    <p className="text-[13px] font-bold text-accent text-center leading-snug">
+                      Visita tentativa registrada. El equipo de AMENA confirmará disponibilidad.
+                    </p>
+                  </div>
+                )}
               </motion.div>
             )}
           </section>
         </div>
+
+        {confirmedProjectVisitPreference && (
+          <button
+            onClick={() => navigateTo('final_success', 15)}
+            className="w-full mt-10 py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
+          >
+            CONTINUAR AL CIERRE FINAL <ArrowRight className="w-6 h-6" />
+          </button>
+        )}
       </motion.div>
     );
   };
@@ -2314,12 +2328,13 @@ const UnitSelectionScreen = () => {
 
       <button 
         onClick={() => {
-              trackPostReservationEvent('comments_analysis_completed', {
-                next_required_step: 'marta_contact',
-              });
-
-              navigateTo('acompanamiento_amena', 12);
-            }}
+          setPostReservationStatus((current) => ({ ...current, projectVisitPreference: 'schedule_visit' }));
+          trackPostReservationEvent('project_visit_step_completed', {
+            project_visit_preference: 'schedule_visit',
+            next_required_step: 'post_reservation_complete',
+          });
+          navigateTo('final_success', 15);
+        }}
         className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
         CONFIRMAR CITA
