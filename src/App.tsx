@@ -66,6 +66,14 @@ const initialPostReservationStatus: PostReservationStatus = {
   projectVisitPreference: null,
 };
 
+const initialInterestedPerson = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  dui: '',
+};
+
 const App: React.FC = () => {
   const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
   const hasStartedReservationSession = React.useRef(false);
@@ -110,6 +118,8 @@ const App: React.FC = () => {
   const [step, setStep] = useState(1);
   const [screen, setScreen] = useState<Screen>('welcome');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [interestedPerson, setInterestedPerson] = useState(initialInterestedPerson);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedSector, setSelectedSector] = useState<Subsector | null>(null);
   const [selectedTorre, setSelectedTorre] = useState<{ id: string; label: string } | null>(null);
@@ -179,6 +189,8 @@ const App: React.FC = () => {
     setStep(1);
     setScreen('welcome');
     setAcceptedTerms(false);
+    setIsTermsModalOpen(false);
+    setInterestedPerson(initialInterestedPerson);
     setSelectedType(null);
     setSelectedSector(null);
     setSelectedTorre(null);
@@ -504,51 +516,92 @@ const App: React.FC = () => {
       </p>
 
       <div className="amena-card-welcome mb-8 p-8 rounded-3xl bg-[#dbe2e5]">
-        <h3 className="text-4xl font-black text-primary mb-6 tracking-tight">Hola, Miguel</h3>
+        <h3 className="text-4xl font-black text-primary mb-6 tracking-tight">Bienvenido a AMENA</h3>
         <p className="text-primary font-bold text-xl leading-relaxed mb-8 opacity-90">
-          Hemos registrado tu interés en AMENA y te compartimos este visualizador digital para ayudarte a conocer mejor el proyecto...
+          Antes de iniciar el recorrido, completa tus datos para personalizar tu experiencia y registrar correctamente tu interés en el proyecto.
         </p>
-        <div className="space-y-6 text-base text-primary">
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">NOMBRE COMPLETO:</span> 
-            <span className="font-black text-right">Miguel Angel Rivas</span>
-          </p>
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">CORREO ELECTRÓNICO:</span> 
-            <span className="font-black text-right">miguel@gmail.com</span>
-          </p>
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">TELÉFONO CELULAR:</span> 
-            <span className="font-black text-right">+503 7060-0000</span>
-          </p>
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">CANAL DE ORIGEN:</span> 
-            <span className="font-black">Facebook</span>
-          </p>
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">FECHA DE REGISTRO:</span> 
-            <span className="font-black">03/04/2026</span>
-          </p>
+        <div className="space-y-5 text-base text-primary">
+          {[
+            { key: 'firstName', label: 'Nombres', placeholder: 'Ej. Miguel' },
+            { key: 'lastName', label: 'Apellidos', placeholder: 'Ej. Rivas' },
+            { key: 'email', label: 'Correo electrónico', placeholder: 'correo@ejemplo.com', type: 'email' },
+            { key: 'phone', label: 'Teléfono celular con código de país', placeholder: 'Ej. +503 7000-0000', type: 'tel' },
+            { key: 'dui', label: 'DUI opcional', placeholder: 'Ej. 00000000-0' },
+          ].map((field) => (
+            <label key={field.key} className="block border-b border-primary/20 pb-3">
+              <span className="block font-black uppercase tracking-widest text-xs mb-2">{field.label}</span>
+              <input
+                type={field.type || 'text'}
+                value={interestedPerson[field.key as keyof typeof interestedPerson]}
+                onChange={(event) => setInterestedPerson((current) => ({ ...current, [field.key]: event.target.value }))}
+                placeholder={field.placeholder}
+                className="w-full bg-white/70 rounded-2xl px-4 py-3 text-primary font-bold outline-none placeholder:text-primary/40"
+              />
+            </label>
+          ))}
         </div>
       </div>
 
-      <button 
-        onClick={() => setAcceptedTerms(!acceptedTerms)}
-        className={cn(
-          "w-full p-5 rounded-2xl border mb-8 flex items-center justify-between transition-all",
-          acceptedTerms ? "bg-white border-primary" : "bg-white border-transparent shadow-sm"
+      <div className={cn(
+        "w-full p-5 rounded-2xl border mb-8 bg-white transition-all",
+        acceptedTerms ? "border-primary" : "border-transparent shadow-sm"
+      )}>
+        <button
+          onClick={() => setAcceptedTerms(!acceptedTerms)}
+          className="w-full flex items-center justify-between"
+        >
+          <p className="text-sm font-bold text-primary text-left pr-4">
+            Acepto los términos, condiciones y tratamiento de mis datos personales en AMENA.
+          </p>
+          <div className={cn(
+            "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
+            acceptedTerms ? "bg-primary border-primary" : "border-slate-300"
+          )}>
+            {acceptedTerms && <Check className="w-4 h-4 text-white" />}
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsTermsModalOpen(true)}
+          className="mt-3 text-left text-xs font-black text-primary underline underline-offset-4"
+        >
+          Ver condiciones de uso y tratamiento de datos
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {isTermsModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-5"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
+            >
+              <h3 className="text-2xl font-black text-primary mb-4">Condiciones de uso y tratamiento de datos</h3>
+              <ul className="space-y-3 text-sm font-semibold leading-6 text-secondary">
+                <li>AMENA usará los datos ingresados únicamente para personalizar el recorrido, dar seguimiento comercial y gestionar una posible reserva.</li>
+                <li>El usuario acepta recibir comunicaciones relacionadas con el proyecto por WhatsApp, correo electrónico o llamada.</li>
+                <li>La información podrá formar parte del expediente operacional del interesado dentro del ecosistema AMENA.</li>
+                <li>AMENA se compromete a tratar los datos con confidencialidad y fines exclusivamente relacionados con el proyecto.</li>
+                <li>El usuario puede solicitar actualización o eliminación de sus datos.</li>
+              </ul>
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(false)}
+                className="mt-6 w-full rounded-2xl bg-primary px-5 py-4 text-sm font-black uppercase tracking-widest text-white"
+              >
+                Cerrar
+              </button>
+            </motion.div>
+          </motion.div>
         )}
-      >
-        <p className="text-sm font-bold text-primary text-left pr-4">
-          Acepto los términos y el tratamiento de mis datos personales en AMENA.
-        </p>
-        <div className={cn(
-          "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
-          acceptedTerms ? "bg-primary border-primary" : "border-slate-300"
-        )}>
-          {acceptedTerms && <Check className="w-4 h-4 text-white" />}
-        </div>
-      </button>
+      </AnimatePresence>
 
       <button 
         disabled={!acceptedTerms}
