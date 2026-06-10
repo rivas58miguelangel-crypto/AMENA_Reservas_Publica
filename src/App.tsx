@@ -1428,7 +1428,7 @@ const UnitSelectionScreen = () => {
     >
       <BackButton />
       <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-6 tracking-tight uppercase">
-        Tu siguiente paso con AMENA
+        Tu siguiente paso con H-Operia
       </h2>
       <p className="text-secondary font-bold text-lg leading-snug mb-10 opacity-80">
         Ya registramos tu pre reserva. Ahora elige cómo deseas continuar para recibir atención y acompañamiento.
@@ -1438,7 +1438,7 @@ const UnitSelectionScreen = () => {
         {[
           { id: 'next_steps_instructions', step: 11, label: 'Instrucciones: Próximos Pasos. Revisa los documentos, análisis financiero y compromisos necesarios para avanzar con pasos firmes en tu pre reserva.' },
           { id: 'user_comments', step: 12, label: 'Comentarios del Interesado. Comparte tus dudas, situaciones específicas o archivos para recibir un análisis inteligente y seguimiento personalizado.' },
-          { id: 'acompanamiento_amena', step: 14, label: 'Acompañamiento AMENA. Accede a un espacio privado para conversar con Marta por texto o voz, agendar un momento cómodo o recibir acceso flexible por correo electrónico.' },
+          { id: 'acompanamiento_amena', step: 14, label: 'Acompañamiento Inteligente. Accede a un espacio privado para conversar con Marta por texto o voz, agendar un momento cómodo o recibir acceso flexible por correo electrónico.' },
           { id: 'visit_schedule', step: 16, label: 'Agenda una cita para visitar el proyecto de construcción o para ser atendido en nuestras oficinas de ventas en el momento disponible que mejor te convenga.' }
         ].map((item, i) => (
           <button 
@@ -1806,7 +1806,7 @@ const UnitSelectionScreen = () => {
              <div className="absolute top-0 right-0 p-4 opacity-5">
                <Info className="w-32 h-32" />
              </div>
-             <h3 className="text-sm font-black uppercase tracking-widest mb-4 opacity-70">Veredicto AMENA</h3>
+             <h3 className="text-sm font-black uppercase tracking-widest mb-4 opacity-70">Lectura H-Operia Intelligence</h3>
              <p className="text-xl font-black leading-tight tracking-tight mb-4">
                {analysisResult.analysis}
              </p>
@@ -1909,7 +1909,7 @@ const UnitSelectionScreen = () => {
         <BackButton />
         <PostReservationStepBadge current={5} />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-6 tracking-tight uppercase">
-          Acompañamiento AMENA
+          Acompañamiento Inteligente
         </h2>
         <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
           Tu reserva ha sido registrada correctamente. Elige cómo deseas hablar con Marta para continuar el acompañamiento obligatorio de tu pre reserva.
@@ -1921,7 +1921,7 @@ const UnitSelectionScreen = () => {
             Avanza con claridad, a tu ritmo
           </h3>
           <p className="text-[15px] font-bold text-secondary/80 leading-snug mb-5">
-            Marta puede atenderte por texto o voz desde el espacio privado de Acompañamiento AMENA, preparar una llamada o generar un link privado por WhatsApp.
+            Marta puede atenderte por texto o voz desde el espacio privado de Acompañamiento Inteligente, preparar una llamada o generar un link privado por WhatsApp.
           </p>
           <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
             <p className="text-[12px] font-bold text-primary/70 leading-snug">
@@ -1935,7 +1935,7 @@ const UnitSelectionScreen = () => {
             <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 01</span>
             <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Hablar ahora con Marta</h3>
             <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-              Ingresa inmediatamente a tu espacio privado de Acompañamiento AMENA para conversar con Marta por texto o voz.
+              Ingresa inmediatamente a tu espacio privado de Acompañamiento Inteligente para conversar con Marta por texto o voz.
             </p>
             <button 
               onClick={() => {
