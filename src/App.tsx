@@ -532,8 +532,8 @@ const App: React.FC = () => {
               <span className="block font-black uppercase tracking-widest text-xs mb-2">{field.label}</span>
               <input
                 type={field.type || 'text'}
-                value={interestedPerson[field.key as keyof typeof interestedPerson]}
-                onChange={(event) => setInterestedPerson((current) => ({ ...current, [field.key]: event.target.value }))}
+                defaultValue={interestedPerson[field.key as keyof typeof interestedPerson]}
+                onBlur={(event) => setInterestedPerson((current) => ({ ...current, [field.key]: event.target.value }))}
                 placeholder={field.placeholder}
                 className="w-full bg-white/70 rounded-2xl px-4 py-3 text-primary font-bold outline-none placeholder:text-primary/40"
               />
@@ -605,7 +605,29 @@ const App: React.FC = () => {
 
       <button 
         disabled={!acceptedTerms}
-        onClick={() => navigateTo('housing_type', 2)}
+onClick={(event) => {
+  const form = event.currentTarget.closest('div');
+  const inputs = form?.querySelectorAll('input') || [];
+  const firstName = (inputs[0] as HTMLInputElement)?.value.trim();
+  const lastName = (inputs[1] as HTMLInputElement)?.value.trim();
+  const email = (inputs[2] as HTMLInputElement)?.value.trim();
+  const phone = (inputs[3] as HTMLInputElement)?.value.trim();
+
+  if (!firstName || !lastName || !email || !phone) {
+    alert('Por favor completa nombres, apellidos, correo electrónico y teléfono antes de continuar.');
+    return;
+  }
+
+  setInterestedPerson((current) => ({
+    ...current,
+    firstName,
+    lastName,
+    email,
+    phone,
+  }));
+
+  navigateTo('housing_type', 2);
+}}
         className={cn(
           "amena-btn amena-btn-dark mb-4",
           !acceptedTerms && "opacity-50 grayscale"
