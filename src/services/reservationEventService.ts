@@ -73,22 +73,38 @@ export async function trackSelectionEvent(payload: {
     | "model"
     | "level"
     | "unit_or_lot"
-    | "unit_detail";
+    | "unit_detail"
+    | "confirmation"
+    | "post_reservation_cta";
   value: string;
   metadata?: Record<string, any>;
 }) {
+  const stepName =
+    payload.step === "housing_type"
+      ? "tipo_propiedad"
+      : payload.step === "model"
+        ? "modelo"
+        : payload.step === "level"
+          ? "nivel"
+      : payload.step === "tower_or_block"
+        ? payload.metadata?.selection_type === "manzana"
+          ? "manzana"
+          : "torre"
+        : payload.step === "unit_or_lot"
+          ? payload.metadata?.selection_type === "lote"
+            ? "lote"
+            : "unidad"
+          : payload.step === "unit_detail"
+            ? "detalle_unidad"
+            : payload.step === "confirmation"
+              ? "confirmacion"
+              : payload.step === "post_reservation_cta"
+                ? "cta_post_reserva"
+                : payload.step;
+
   return safeInsert("reservation_selection_events", {
     session_id: payload.sessionId ?? null,
-    step_name:
-  payload.step === "housing_type"
-    ? "tipo_propiedad"
-    : payload.step === "tower_or_block"
-      ? "torre"
-      : payload.step === "unit_or_lot"
-        ? "unidad"
-        : payload.step === "unit_detail"
-          ? "confirmacion"
-          : payload.step,
+    step_name: stepName,
     selected_value: payload.value,
     selected_label:
       payload.metadata?.display ??
@@ -98,6 +114,44 @@ export async function trackSelectionEvent(payload: {
   payload.step === "housing_type"
     ? (payload.value === "casas" ? "casa" : "apartamento")
     : payload.metadata?.property_type ?? null,
+        sector: payload.metadata?.sector ?? null,
+
+    block:
+      payload.metadata?.block ??
+      payload.metadata?.block_code ??
+      (payload.metadata?.selection_type === "manzana" ? payload.metadata?.tower_or_block : null) ??
+      (payload.metadata?.property_type === "casa" ? payload.metadata?.tower_or_block : null) ??
+      null,
+
+    tower:
+      payload.metadata?.tower ??
+      payload.metadata?.tower_code ??
+      (payload.metadata?.selection_type === "torre" ? payload.metadata?.tower_or_block : null) ??
+      (payload.metadata?.property_type === "apartamento" ? payload.metadata?.tower_or_block : null) ??
+      null,
+
+    level:
+      payload.metadata?.level ??
+      payload.metadata?.level_code ??
+      null,
+
+    model_code:
+      payload.metadata?.model ??
+      payload.metadata?.model_code ??
+      null,
+
+    lot_number:
+      payload.metadata?.lot ??
+      payload.metadata?.lot_number ??
+      (payload.metadata?.selection_type === "lote" ? payload.value : null) ??
+      null,
+
+    unit_code:
+      payload.metadata?.unit ??
+      payload.metadata?.unit_code ??
+      (payload.metadata?.selection_type === "unidad" ? payload.value : null) ??
+      null,
+
     raw_payload: {
       step: payload.step,
       value: payload.value,
