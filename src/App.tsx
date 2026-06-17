@@ -37,15 +37,47 @@ type Screen =
   | 'further_steps'
   | 'acompanamiento_amena'
   | 'next_steps_instructions'
+  | 'whatsapp_confirmation'
+  | 'office_schedule'
+  | 'project_visit_schedule'
   | 'user_comments'
   | 'analysis_report'
   | 'digital_agent'
   | 'agent_call'
   | 'visit_schedule'
   | 'final_success';
+
+type MartaContactPreference = 'talk_now' | 'schedule_call' | 'whatsapp_link' | null;
+type ProjectVisitPreference = 'request_visit' | 'schedule_visit' | null;
+
+type PostReservationStatus = {
+  instructionsAcknowledged: boolean;
+  martaContactPreference: MartaContactPreference;
+  whatsappReceiptConfirmed: boolean;
+  salesOfficeAppointmentScheduled: boolean;
+  projectVisitPreference: ProjectVisitPreference;
+};
+
+const initialPostReservationStatus: PostReservationStatus = {
+  instructionsAcknowledged: false,
+  martaContactPreference: null,
+  whatsappReceiptConfirmed: false,
+  salesOfficeAppointmentScheduled: false,
+  projectVisitPreference: null,
+};
+
+const initialInterestedPerson = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  dui: '',
+};
+
 const App: React.FC = () => {
   const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
   const hasStartedReservationSession = React.useRef(false);
+  const martaScheduleDraftOpen = React.useRef(false);
 
   React.useEffect(() => {
     document.documentElement.style.setProperty('--brand-primary', projectBranding.primaryColor);
@@ -86,6 +118,8 @@ const App: React.FC = () => {
   const [step, setStep] = useState(1);
   const [screen, setScreen] = useState<Screen>('welcome');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [interestedPerson, setInterestedPerson] = useState(initialInterestedPerson);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedSector, setSelectedSector] = useState<Subsector | null>(null);
   const [selectedTorre, setSelectedTorre] = useState<{ id: string; label: string } | null>(null);
@@ -101,8 +135,9 @@ const App: React.FC = () => {
   const [isModelGalleryOpen, setIsModelGalleryOpen] = useState(false);
   const [inspectingModel, setInspectingModel] = useState<Model | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [postReservationStatus, setPostReservationStatus] = useState<PostReservationStatus>(initialPostReservationStatus);
 
-  const totalSteps = 17;
+  const totalSteps = 15;
 
   const navigateTo = (newScreen: Screen, newStep: number) => {
     setScreen(newScreen);
@@ -117,7 +152,9 @@ const App: React.FC = () => {
     | "model"
     | "level"
     | "unit_or_lot"
-    | "unit_detail",
+    | "unit_detail"
+    | "confirmation"
+    | "post_reservation_cta",
   value: string,
   metadata?: Record<string, any>
 ) => {
@@ -128,11 +165,32 @@ const App: React.FC = () => {
     metadata,
   });
 };
+
+  const trackPostReservationEvent = (eventName: string, metadata?: Record<string, any>) => {
+    const postReservationEvent = {
+      event_name: eventName,
+      property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+      sector: selectedSector?.id,
+      tower_or_block: selectedTorre?.id,
+      level: selectedLevel?.id,
+      model: selectedModel?.id,
+      unit_or_lot: selectedUnit?.id,
+      selection_type: selectedType === 'apartamentos' ? 'unidad' : 'lote',
+      metadata: metadata ?? {},
+    };
+
+    if (import.meta.env.DEV) {
+      console.debug('[AMENA post-reservation event pending Supabase]', postReservationEvent);
+    }
+  };
+
   const handleLogout = () => {
     // Reset all states
     setStep(1);
     setScreen('welcome');
     setAcceptedTerms(false);
+    setIsTermsModalOpen(false);
+    setInterestedPerson(initialInterestedPerson);
     setSelectedType(null);
     setSelectedSector(null);
     setSelectedTorre(null);
@@ -140,6 +198,8 @@ const App: React.FC = () => {
     setSelectedModel(null);
     setSelectedUnit(null);
     setAnalysisResult(null);
+    setPostReservationStatus(initialPostReservationStatus);
+    martaScheduleDraftOpen.current = false;
     window.scrollTo(0, 0);
   };
 
@@ -156,14 +216,17 @@ const App: React.FC = () => {
     else if (screen === 'unit_detail') navigateTo('unit_selection', 7);
     else if (screen === 'reservation_form') navigateTo('unit_detail', 8);
     else if (screen === 'further_steps') navigateTo('reservation_form', 9);
-    else if (screen === 'acompanamiento_amena') navigateTo('further_steps', 10);
-    else if (screen === 'next_steps_instructions') navigateTo('further_steps', 10);
-    else if (screen === 'user_comments') navigateTo('further_steps', 10);
+    else if (screen === 'next_steps_instructions') navigateTo('reservation_form', 9);
+    else if (screen === 'acompanamiento_amena') navigateTo('next_steps_instructions', 10);
+    else if (screen === 'whatsapp_confirmation') navigateTo('acompanamiento_amena', 11);
+    else if (screen === 'office_schedule') navigateTo('whatsapp_confirmation', 12);
+    else if (screen === 'project_visit_schedule') navigateTo('office_schedule', 13);
+    else if (screen === 'user_comments') navigateTo('next_steps_instructions', 10);
     else if (screen === 'analysis_report') navigateTo('user_comments', 12);
     else if (screen === 'digital_agent') navigateTo('further_steps', 10);
     else if (screen === 'agent_call') navigateTo('further_steps', 10);
     else if (screen === 'visit_schedule') navigateTo('further_steps', 10);
-    else if (screen === 'final_success') navigateTo('further_steps', 10);
+    else if (screen === 'final_success') navigateTo('project_visit_schedule', 14);
   };
 
   // --- Components ---
@@ -210,18 +273,21 @@ const App: React.FC = () => {
     </button>
   );
 
+  const PostReservationStepBadge = (_props?: { current?: number }) => null;
+
   const ImageModal = ({ isOpen, onClose, title, imageUrl, message }: { isOpen: boolean, onClose: () => void, title: string, imageUrl?: string, message?: string }) => (
     <AnimatePresence>
       {isOpen && (
         <motion.div 
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col p-6"
+          className="fixed inset-0 z-[180] bg-black/90 backdrop-blur-md flex flex-col p-6"
         >
-          <div className="flex justify-between items-center mb-8">
+          <div className="relative z-[190] flex justify-between items-center mb-8">
             <h3 className="text-white text-xl font-black uppercase tracking-widest">{title}</h3>
             <button 
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white"
+              aria-label="Cerrar modal"
+              className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-primary shadow-lg hover:bg-white transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
@@ -251,12 +317,14 @@ const App: React.FC = () => {
     </AnimatePresence>
   );
 
-  const ModelGalleryModal = ({ isOpen, onClose, models, onSelect }: { isOpen: boolean, onClose: () => void, models: Model[], onSelect: (m: Model) => void }) => {
+  const ModelGalleryModal = ({ isOpen, onClose, models }: { isOpen: boolean, onClose: () => void, models: Model[] }) => {
     const [currentModelIndex, setCurrentModelIndex] = useState(0);
+    const [hasReviewedAllModels, setHasReviewedAllModels] = useState(false);
 
     React.useEffect(() => {
       if (isOpen) {
         setCurrentModelIndex(0);
+        setHasReviewedAllModels(false);
       }
     }, [isOpen]);
 
@@ -289,8 +357,8 @@ const App: React.FC = () => {
                 ))}
               </div>
 
-              <div className="absolute top-8 right-8 z-20">
-                <button onClick={onClose} className="w-12 h-12 rounded-full flex items-center justify-center text-primary/30 hover:bg-black/5 transition-colors">
+              <div className="absolute top-8 right-8 z-[190]">
+                <button onClick={onClose} aria-label="Cerrar galería de modelos" className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center text-primary shadow-lg hover:bg-white transition-colors">
                   <X className="w-8 h-8" />
                 </button>
               </div>
@@ -338,15 +406,26 @@ const App: React.FC = () => {
                   onClick={() => {
                     if (currentModelIndex < models.length - 1) {
                       setCurrentModelIndex(currentModelIndex + 1);
+                      setHasReviewedAllModels(false);
                     } else {
-                      onSelect(model);
-                      onClose();
+                      setHasReviewedAllModels(true);
                     }
                   }}
                   className="w-full py-8 rounded-[2rem] bg-accent text-white font-black uppercase text-xl tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
                 >
-                  {currentModelIndex < models.length - 1 ? 'SIGUIENTE' : 'SELECCIONAR'} <ArrowRight className="w-6 h-6" />
+                  {currentModelIndex < models.length - 1 ? 'SIGUIENTE' : 'YA REVISÉ TODOS'} <ArrowRight className="w-6 h-6" />
                 </button>
+                {hasReviewedAllModels && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 8 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-4 rounded-2xl bg-white border border-accent/20 shadow-lg"
+                  >
+                    <p className="text-[13px] font-black text-primary text-center leading-snug">
+                      Ya revisaste todos los modelos. Cierra la galería y elige tu modelo preferido.
+                    </p>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -373,8 +452,8 @@ const App: React.FC = () => {
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               className="relative w-full max-w-[500px] h-[92vh] bg-[#f2f2eb] shadow-2xl rounded-[4rem] overflow-hidden flex flex-col mx-4 sm:mx-0"
             >
-              <div className="absolute top-6 right-6 z-10">
-                <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-primary">
+              <div className="absolute top-6 right-6 z-[190]">
+                <button onClick={onClose} aria-label="Cerrar detalle de modelo" className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-primary shadow-lg hover:bg-white transition-colors">
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -437,55 +516,118 @@ const App: React.FC = () => {
       </p>
 
       <div className="amena-card-welcome mb-8 p-8 rounded-3xl bg-[#dbe2e5]">
-        <h3 className="text-4xl font-black text-primary mb-6 tracking-tight">Hola, Miguel</h3>
+        <h3 className="text-4xl font-black text-primary mb-6 tracking-tight">Bienvenido a AMENA</h3>
         <p className="text-primary font-bold text-xl leading-relaxed mb-8 opacity-90">
-          Hemos registrado tu interés en AMENA y te compartimos este visualizador digital para ayudarte a conocer mejor el proyecto...
+          Antes de iniciar el recorrido, completa tus datos para personalizar tu experiencia y registrar correctamente tu interés en el proyecto.
         </p>
-        <div className="space-y-6 text-base text-primary">
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">NOMBRE COMPLETO:</span> 
-            <span className="font-black text-right">Miguel Angel Rivas</span>
-          </p>
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">CORREO ELECTRÓNICO:</span> 
-            <span className="font-black text-right">miguel@gmail.com</span>
-          </p>
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">TELÉFONO CELULAR:</span> 
-            <span className="font-black text-right">+503 7060-0000</span>
-          </p>
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">CANAL DE ORIGEN:</span> 
-            <span className="font-black">Facebook</span>
-          </p>
-          <p className="flex justify-between items-center border-b border-primary/20 pb-3">
-            <span className="font-black uppercase tracking-widest text-xs">FECHA DE REGISTRO:</span> 
-            <span className="font-black">03/04/2026</span>
-          </p>
+        <div className="space-y-5 text-base text-primary">
+          {[
+            { key: 'firstName', label: 'Nombres', placeholder: 'Ej. Miguel' },
+            { key: 'lastName', label: 'Apellidos', placeholder: 'Ej. Rivas' },
+            { key: 'email', label: 'Correo electrónico', placeholder: 'correo@ejemplo.com', type: 'email' },
+            { key: 'phone', label: 'Teléfono celular con código de país', placeholder: 'Ej. +503 7000-0000', type: 'tel' },
+            { key: 'dui', label: 'DUI opcional', placeholder: 'Ej. 00000000-0' },
+          ].map((field) => (
+            <label key={field.key} className="block border-b border-primary/20 pb-3">
+              <span className="block font-black uppercase tracking-widest text-xs mb-2">{field.label}</span>
+              <input
+                type={field.type || 'text'}
+                defaultValue={interestedPerson[field.key as keyof typeof interestedPerson]}
+                onBlur={(event) => setInterestedPerson((current) => ({ ...current, [field.key]: event.target.value }))}
+                placeholder={field.placeholder}
+                className="w-full bg-white/70 rounded-2xl px-4 py-3 text-primary font-bold outline-none placeholder:text-primary/40"
+              />
+            </label>
+          ))}
         </div>
       </div>
 
-      <button 
-        onClick={() => setAcceptedTerms(!acceptedTerms)}
-        className={cn(
-          "w-full p-5 rounded-2xl border mb-8 flex items-center justify-between transition-all",
-          acceptedTerms ? "bg-white border-primary" : "bg-white border-transparent shadow-sm"
+      <div className={cn(
+        "w-full p-5 rounded-2xl border mb-8 bg-white transition-all",
+        acceptedTerms ? "border-primary" : "border-transparent shadow-sm"
+      )}>
+        <button
+          onClick={() => setAcceptedTerms(!acceptedTerms)}
+          className="w-full flex items-center justify-between"
+        >
+          <p className="text-sm font-bold text-primary text-left pr-4">
+            Acepto los términos, condiciones y tratamiento de mis datos personales en AMENA.
+          </p>
+          <div className={cn(
+            "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
+            acceptedTerms ? "bg-primary border-primary" : "border-slate-300"
+          )}>
+            {acceptedTerms && <Check className="w-4 h-4 text-white" />}
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsTermsModalOpen(true)}
+          className="mt-3 text-left text-xs font-black text-primary underline underline-offset-4"
+        >
+          Ver condiciones de uso y tratamiento de datos
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {isTermsModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-5"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
+            >
+              <h3 className="text-2xl font-black text-primary mb-4">Condiciones de uso y tratamiento de datos</h3>
+              <ul className="space-y-3 text-sm font-semibold leading-6 text-secondary">
+                <li>AMENA usará los datos ingresados únicamente para personalizar el recorrido, dar seguimiento comercial y gestionar una posible reserva.</li>
+                <li>El usuario acepta recibir comunicaciones relacionadas con el proyecto por WhatsApp, correo electrónico o llamada.</li>
+                <li>La información podrá formar parte del expediente operacional del interesado dentro del ecosistema AMENA.</li>
+                <li>AMENA se compromete a tratar los datos con confidencialidad y fines exclusivamente relacionados con el proyecto.</li>
+                <li>El usuario puede solicitar actualización o eliminación de sus datos.</li>
+              </ul>
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(false)}
+                className="mt-6 w-full rounded-2xl bg-primary px-5 py-4 text-sm font-black uppercase tracking-widest text-white"
+              >
+                Cerrar
+              </button>
+            </motion.div>
+          </motion.div>
         )}
-      >
-        <p className="text-sm font-bold text-primary text-left pr-4">
-          Acepto los términos y el tratamiento de mis datos personales en AMENA.
-        </p>
-        <div className={cn(
-          "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
-          acceptedTerms ? "bg-primary border-primary" : "border-slate-300"
-        )}>
-          {acceptedTerms && <Check className="w-4 h-4 text-white" />}
-        </div>
-      </button>
+      </AnimatePresence>
 
       <button 
         disabled={!acceptedTerms}
-        onClick={() => navigateTo('housing_type', 2)}
+onClick={(event) => {
+  const form = event.currentTarget.closest('div');
+  const inputs = form?.querySelectorAll('input') || [];
+  const firstName = (inputs[0] as HTMLInputElement)?.value.trim();
+  const lastName = (inputs[1] as HTMLInputElement)?.value.trim();
+  const email = (inputs[2] as HTMLInputElement)?.value.trim();
+  const phone = (inputs[3] as HTMLInputElement)?.value.trim();
+
+  if (!firstName || !lastName || !email || !phone) {
+    alert('Por favor completa nombres, apellidos, correo electrónico y teléfono antes de continuar.');
+    return;
+  }
+
+  setInterestedPerson((current) => ({
+    ...current,
+    firstName,
+    lastName,
+    email,
+    phone,
+  }));
+
+  navigateTo('housing_type', 2);
+}}
         className={cn(
           "amena-btn amena-btn-dark mb-4",
           !acceptedTerms && "opacity-50 grayscale"
@@ -575,7 +717,14 @@ const App: React.FC = () => {
           </button>
 
           <button
-            onClick={() => { setSelectedType('apartamentos'); navigateTo('sector_selection', 3); }}
+            onClick={() => {
+              setSelectedType('apartamentos');
+              trackSelection('housing_type', 'apartamentos', {
+                label: 'Vertical',
+                display: 'Apartamentos'
+              });
+              navigateTo('sector_selection', 3);
+            }}
             className="group bg-white border-2 border-transparent hover:border-accent/20 rounded-[2rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3"
           >
              <div className="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
@@ -864,6 +1013,16 @@ const App: React.FC = () => {
               key={model.id}
               onClick={() => {
                 setSelectedModel(model);
+                trackSelection('model', model.id, {
+                  label: model.name,
+                  display: model.name,
+                  property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                  sector: selectedSector?.id,
+                  tower_or_block: selectedTorre?.id,
+                  selection_type: 'modelo',
+                  price: model.price,
+                  area: model.area
+                });
                 if (isApartments) navigateTo('level_selection', 6);
                 else navigateTo('unit_selection', 7);
               }}
@@ -889,9 +1048,6 @@ const App: React.FC = () => {
           isOpen={isModelGalleryOpen}
           onClose={() => setIsModelGalleryOpen(false)}
           models={models}
-          onSelect={(model) => {
-            setSelectedModel(model);
-          }}
         />
       </motion.div>
     );
@@ -936,6 +1092,15 @@ const App: React.FC = () => {
               key={level.id}
               onClick={() => {
                 setSelectedLevel(level);
+                trackSelection('level', level.id, {
+                  label: level.name,
+                  display: level.name,
+                  property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                  sector: selectedSector?.id,
+                  tower_or_block: selectedTorre?.id,
+                  model: selectedModel?.id,
+                  selection_type: 'nivel'
+                });
                 navigateTo('unit_selection', 7);
               }}
               className="bg-white border-2 border-transparent hover:border-accent/10 rounded-[2rem] p-6 text-center flex flex-col items-center gap-2 shadow-sm active:ring-4 active:ring-accent/10 transition-all group"
@@ -1026,6 +1191,16 @@ const UnitSelectionScreen = () => {
             key={target.id}
             onClick={() => {
               setSelectedUnit(target);
+              trackSelection('unit_or_lot', target.id, {
+                label: target.label,
+                display: target.label,
+                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                sector: selectedSector?.id,
+                tower_or_block: selectedTorre?.id,
+                level: selectedLevel?.id,
+                model: selectedModel?.id,
+                selection_type: isApartments ? 'unidad' : 'lote'
+              });
               navigateTo('unit_detail', 8);
             }}
             className={`bg-white border-2 ${isApartments ? 'border-accent/10' : 'border-primary/10'} rounded-[2.5rem] p-10 text-center flex flex-col items-center justify-center gap-2 shadow-md active:scale-95 transition-all ${isApartments ? 'hover:border-accent' : 'hover:border-primary'} group`}
@@ -1121,7 +1296,20 @@ const UnitSelectionScreen = () => {
           </div>
 
           <button 
-            onClick={() => navigateTo('reservation_form', 9)}
+            onClick={() => {
+              trackSelection('unit_detail', selectedUnit?.id ?? 'sin_unidad', {
+                label: selectedUnit?.label,
+                display: selectedUnit?.label,
+                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                sector: selectedSector?.id,
+                tower_or_block: selectedTorre?.id,
+                level: selectedLevel?.id,
+                model: selectedModel?.id,
+                selection_type: isApartments ? 'unidad' : 'lote',
+                action: 'iniciar_pre_reserva'
+              });
+              navigateTo('reservation_form', 9);
+            }}
             className="w-full py-5 rounded-2xl bg-black text-white font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
           >
             INICIAR PRE-RESERVA <ArrowRight className="w-4 h-4" />
@@ -1174,6 +1362,7 @@ const UnitSelectionScreen = () => {
         className="p-8"
       >
         <BackButton />
+        <PostReservationStepBadge current={1} />
         <h2 className={`text-[32px] font-black ${accentColor} leading-none mb-4 tracking-tight uppercase`}>
           Confirma tu Interés
         </h2>
@@ -1230,7 +1419,21 @@ const UnitSelectionScreen = () => {
             <p className="text-sm font-bold text-secondary uppercase tracking-widest opacity-80 italic">Al confirmar, enviaremos esta selección a un asesor AMENA.</p>
           </div>
           <button 
-            onClick={() => navigateTo('further_steps', 10)}
+            onClick={() => {
+              trackSelection('confirmation', selectedUnit?.id ?? 'sin_unidad', {
+                label: selectedUnit?.label,
+                display: selectedUnit?.label,
+                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                sector: selectedSector?.id,
+                tower_or_block: selectedTorre?.id,
+                level: selectedLevel?.id,
+                model: selectedModel?.id,
+                selection_type: isApartments ? 'unidad' : 'lote',
+                action: 'confirmar_seleccion'
+              });
+              setPostReservationStatus(initialPostReservationStatus);
+              navigateTo('next_steps_instructions', 10);
+            }}
             className={`w-full py-8 rounded-[2rem] ${accentBg} text-white font-black uppercase text-xl tracking-widest shadow-2xl active:scale-95 transition-transform`}
           >
             CONFIRMAR SELECCIÓN
@@ -1247,7 +1450,7 @@ const UnitSelectionScreen = () => {
     >
       <BackButton />
       <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-6 tracking-tight uppercase">
-        Tu siguiente paso con AMENA
+        Tu siguiente paso con H-Operia
       </h2>
       <p className="text-secondary font-bold text-lg leading-snug mb-10 opacity-80">
         Ya registramos tu pre reserva. Ahora elige cómo deseas continuar para recibir atención y acompañamiento.
@@ -1257,12 +1460,25 @@ const UnitSelectionScreen = () => {
         {[
           { id: 'next_steps_instructions', step: 11, label: 'Instrucciones: Próximos Pasos. Revisa los documentos, análisis financiero y compromisos necesarios para avanzar con pasos firmes en tu pre reserva.' },
           { id: 'user_comments', step: 12, label: 'Comentarios del Interesado. Comparte tus dudas, situaciones específicas o archivos para recibir un análisis inteligente y seguimiento personalizado.' },
-          { id: 'acompanamiento_amena', step: 14, label: 'Acompañamiento AMENA. Accede a un espacio privado para conversar con Marta por texto o voz, agendar un momento cómodo o recibir acceso flexible por correo electrónico.' },
+          { id: 'acompanamiento_amena', step: 14, label: 'Acompañamiento Inteligente. Accede a un espacio privado para conversar con Marta por texto o voz, agendar un momento cómodo o recibir acceso flexible por correo electrónico.' },
           { id: 'visit_schedule', step: 16, label: 'Agenda una cita para visitar el proyecto de construcción o para ser atendido en nuestras oficinas de ventas en el momento disponible que mejor te convenga.' }
         ].map((item, i) => (
           <button 
             key={i}
             onClick={() => {
+              trackSelection('post_reservation_cta', item.id, {
+                label: item.label,
+                display: item.label,
+                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+                sector: selectedSector?.id,
+                tower_or_block: selectedTorre?.id,
+                level: selectedLevel?.id,
+                model: selectedModel?.id,
+                unit_or_lot: selectedUnit?.id,
+                selection_type: selectedType === 'apartamentos' ? 'unidad' : 'lote',
+                target_screen: item.id,
+                target_step: item.step
+              });
               navigateTo(item.id as Screen, item.step);
             }}
             className="w-full p-8 bg-white border-[4px] border-accent hover:border-accent shadow-xl rounded-3xl text-left active:scale-[0.98] transition-all group"
@@ -1289,63 +1505,63 @@ const UnitSelectionScreen = () => {
       className="p-8 pb-32"
     >
       <BackButton />
-      <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-6 tracking-tight uppercase">
-        Instrucciones Próximos Pasos
+      <PostReservationStepBadge current={2} />
+      <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
+        Instrucciones post-reserva
       </h2>
+      <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
+        Antes de continuar, revisa estas indicaciones para mantener tu pre reserva ordenada y avanzar con pasos firmes.
+      </p>
       
       <div className="space-y-8">
         <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
           <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-accent" />
-            Documentos a Entregar
+            Interacciones generales / comunicación
           </h3>
-          <p className="text-[14px] font-medium text-secondary leading-snug">
+          <ul className="space-y-3">
+            <li className="text-[13px] font-bold text-primary/75 flex gap-2 leading-snug">
+              <Check className="w-4 h-4 text-accent shrink-0" /> Es vital tu compromiso en la atención de llamadas, WhatsApp y correos electrónicos para mantener la fluidez del proceso.
+            </li>
+            <li className="text-[13px] font-bold text-primary/75 flex gap-2 leading-snug">
+              <Check className="w-4 h-4 text-accent shrink-0" /> Solicitaremos referencias de instituciones financieras, comercios, laborales y personales para completar tu perfil.
+            </li>
+          </ul>
+        </section>
+
+        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
+          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-accent" />
+            Documentos
+          </h3>
+          <p className="text-[14px] font-medium text-secondary leading-snug mb-3">
             Preparación de la documentación legal y personal requerida para formalizar tu proceso de pre reserva.
+          </p>
+          <p className="text-[13px] font-bold text-primary/70 flex gap-2 leading-snug">
+            <Check className="w-4 h-4 text-accent shrink-0" /> Gestión de documentos y calendario de entrega.
           </p>
         </section>
 
         <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
           <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-accent" />
-            Capacidad Económica
+            Pagos y gestiones
           </h3>
           <div className="space-y-3">
             <p className="text-[14px] font-medium text-secondary leading-snug italic">
               Análisis profundo de tu realidad financiera para avanzar con pasos firmes.
             </p>
             <ul className="space-y-2">
-              <li className="text-[12px] font-bold text-primary/70 flex gap-2">
-                <Check className="w-4 h-4 text-accent shrink-0" /> Gestión de documentos y calendario de entrega.
-              </li>
-              <li className="text-[12px] font-bold text-primary/70 flex gap-2">
+              <li className="text-[13px] font-bold text-primary/70 flex gap-2 leading-snug">
                 <Check className="w-4 h-4 text-accent shrink-0" /> Planificación de desembolsos económicos.
               </li>
-              <li className="text-[12px] font-bold text-primary/70 flex gap-2">
-                <Check className="w-4 h-4 text-accent shrink-0" /> Identificación de restricciones y opciones de salida.
+              <li className="text-[13px] font-bold text-primary/70 flex gap-2 leading-snug">
+                <Check className="w-4 h-4 text-accent shrink-0" /> Evaluación detallada de condiciones crediticias y proyecciones de inversión.
+              </li>
+              <li className="text-[13px] font-bold text-primary/70 flex gap-2 leading-snug">
+                <Check className="w-4 h-4 text-accent shrink-0" /> Tiempo concedido para realizar todas las gestiones solicitadas.
               </li>
             </ul>
-          </div>
-        </section>
-
-        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            Análisis Financiero
-          </h3>
-          <p className="text-[14px] font-medium text-secondary leading-snug">
-            Evaluación detallada de las condiciones crediticias y proyecciones de inversión.
-          </p>
-        </section>
-
-        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            Período de Pre Reserva
-          </h3>
-          <div className="space-y-3">
-            <p className="text-[14px] font-medium text-secondary leading-snug">
-              Tiempo concedido para realizar todas las gestiones solicitadas.
-            </p>
             <div className="p-3 bg-accent/5 rounded-xl border border-accent/10">
               <p className="text-[11px] font-bold text-accent italic">
                 * Las extensiones de este período son excepcionales y se evaluarán según las circunstancias documentadas.
@@ -1353,39 +1569,19 @@ const UnitSelectionScreen = () => {
             </div>
           </div>
         </section>
-
-        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            Compromiso de Comunicación
-          </h3>
-          <p className="text-[14px] font-medium text-secondary leading-snug">
-            Es vital tu compromiso en la atención de llamadas, WhatsApp y correos electrónicos para mantener la fluidez del proceso.
-          </p>
-        </section>
-
-        <section className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            Referencias Requeridas
-          </h3>
-          <p className="text-[14px] font-medium text-secondary leading-snug">
-            Solicitaremos referencias de instituciones financieras, comercios, laborales y personales para completar tu perfil.
-          </p>
-        </section>
       </div>
 
-      <div className="mt-8 p-6 bg-accent/5 rounded-[2rem] border border-accent/10">
-        <p className="text-[14px] font-bold text-accent text-center italic">
-          Se ha enviado un registro de los comentarios del usuario y de nuestras interacciones al correo miguel@gmail.com
-        </p>
-      </div>
-
-      <button 
-        onClick={() => navigateTo('further_steps', 10)}
+      <button
+        onClick={() => {
+          setPostReservationStatus((current) => ({ ...current, instructionsAcknowledged: true }));
+          trackPostReservationEvent('post_reservation_instructions_completed', {
+            next_required_step: 'user_comments',
+          });
+          navigateTo('user_comments', 11);
+        }}
         className="w-full mt-10 py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
-        ENTENDIDO, VOLVER <ArrowRight className="w-6 h-6" />
+        CONTINUAR <ArrowRight className="w-6 h-6" />
       </button>
     </motion.div>
   );
@@ -1396,6 +1592,7 @@ const UnitSelectionScreen = () => {
       { title: '', text: '', attachments: [] }
     ]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [commentsChoice, setCommentsChoice] = useState<'yes' | 'no' | null>(null);
 
     const addBlock = () => {
       setBlocks([...blocks, { title: '', text: '', attachments: [] }]);
@@ -1415,26 +1612,41 @@ const UnitSelectionScreen = () => {
       setBlocks(newBlocks);
     };
 
+    const buildAnalysisResult = (resultEmail: string, submittedBlocks: typeof blocks) => ({
+      email: resultEmail,
+      blocks: submittedBlocks,
+      analysis: submittedBlocks.length > 0
+        ? "Basado en tu información, existe una PROBABILIDAD ALTA (85%) de éxito en tu trámite si se siguen las recomendaciones adjuntas."
+        : "No registraste comentarios adicionales en este momento. AMENA continuará el acompañamiento con la información de tu pre reserva.",
+      options: [
+        { title: "Opción de Financiamiento Directo", detail: "Aprovecha la tasa preferencial AMENA para clientes con tu perfil laboral." },
+        { title: "Optimización de Espacios", detail: "Se recomienda el modelo con balcón extendido para mayor ventilación natural." },
+        { title: "Calendario de Documentación", detail: "Entrega tu constancia salarial antes del día 15 para congelar la tasa." }
+      ],
+      recommendation: submittedBlocks.length > 0
+        ? "SE RECOMIENDA SEGUIR EL TRÁMITE CON FIRMEZA. Tu capacidad económica y estabilidad referenciada son compatibles con los requerimientos del proyecto."
+        : "Puedes continuar el proceso sin comentarios adicionales. El equipo de AMENA podrá contactarte en los pasos posteriores si necesita ampliar información."
+    });
+
+    const continueWithoutComments = () => {
+      setAnalysisResult(buildAnalysisResult('', []));
+      navigateTo('analysis_report', 13);
+    };
+
     const runAnalysis = () => {
-      if (!email || blocks.some(b => !b.title || !b.text)) {
-        alert("Por favor completa tu email y todos los bloques de comentarios.");
+      const trimmedEmail = email.trim();
+      const submittedBlocks = blocks.filter((block) => 
+        block.title.trim() || block.text.trim() || block.attachments.length > 0
+      );
+
+      if (!trimmedEmail) {
+        alert("Por favor completa tu email.");
         return;
       }
       setIsAnalyzing(true);
       setTimeout(() => {
         setIsAnalyzing(false);
-        const result = {
-          email,
-          blocks,
-          analysis: "Basado en tu información, existe una PROBABILIDAD ALTA (85%) de éxito en tu trámite si se siguen las recomendaciones adjuntas.",
-          options: [
-            { title: "Opción de Financiamiento Directo", detail: "Aprovecha la tasa preferencial AMENA para clientes con tu perfil laboral." },
-            { title: "Optimización de Espacios", detail: "Se recomienda el modelo con balcón extendido para mayor ventilación natural." },
-            { title: "Calendario de Documentación", detail: "Entrega tu constancia salarial antes del día 15 para congelar la tasa." }
-          ],
-          recommendation: "SE RECOMIENDA SEGUIR EL TRÁMITE CON FIRMEZA. Tu capacidad económica y estabilidad referenciada son compatibles con los requerimientos del proyecto."
-        };
-        setAnalysisResult(result);
+        setAnalysisResult(buildAnalysisResult(trimmedEmail, submittedBlocks));
         navigateTo('analysis_report', 13);
       }, 3000);
     };
@@ -1445,16 +1657,73 @@ const UnitSelectionScreen = () => {
         className="p-8 pb-32"
       >
         <BackButton />
+        <PostReservationStepBadge current={3} />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-2 tracking-tight uppercase">
           Comentarios del Interesado
         </h2>
         <p className="text-secondary font-bold text-sm mb-8 opacity-70">
-          Comparte tu visión y documentos para un análisis inteligente de tu pre reserva.
+          Decide si deseas agregar información adicional antes de continuar.
         </p>
 
+        {!commentsChoice && (
+          <div className="space-y-6">
+            <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
+              <h3 className="text-[22px] font-black text-primary leading-tight mb-4">
+                ¿Deseas compartir comentarios, dudas o documentos adicionales?
+              </h3>
+              <p className="text-[14px] font-bold text-secondary/70 leading-snug mb-6">
+                Puedes continuar sin agregar información adicional o compartir detalles para enriquecer el análisis.
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => setCommentsChoice('yes')}
+                  className="w-full py-5 rounded-2xl bg-accent text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform"
+                >
+                  Sí, deseo agregar comentarios
+                </button>
+                <button
+                  onClick={() => setCommentsChoice('no')}
+                  className="w-full py-5 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
+                >
+                  No deseo agregar comentarios ahora
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {commentsChoice === 'no' && (
+          <div className="space-y-6">
+            <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
+              <h3 className="text-[22px] font-black text-primary leading-tight mb-4">
+                Continuar sin comentarios
+              </h3>
+              <p className="text-[14px] font-bold text-secondary/70 leading-snug">
+                No se solicitará email, comentarios ni archivos en este paso. Puedes regresar o avanzar al análisis demo del flujo.
+              </p>
+            </section>
+            <button
+              onClick={handleBack}
+              className="w-full py-5 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
+            >
+              REGRESAR
+            </button>
+            <button
+              onClick={continueWithoutComments}
+              className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
+            >
+              CONTINUAR <ArrowRight className="w-6 h-6" />
+            </button>
+          </div>
+        )}
+
+        {commentsChoice === 'yes' && (
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-[2rem] border-2 border-accent/10 shadow-lg">
             <label className="block text-[11px] font-black text-primary uppercase tracking-widest mb-2 px-1">Tu E-mail para reportes</label>
+            <p className="text-[12px] font-bold text-secondary/60 mb-4">
+              Email obligatorio en esta opción. Comentarios y archivos opcionales.
+            </p>
             <input 
               type="email" 
               value={email}
@@ -1529,6 +1798,7 @@ const UnitSelectionScreen = () => {
             )}
           </button>
         </div>
+        )}
       </motion.div>
     );
   };
@@ -1542,6 +1812,7 @@ const UnitSelectionScreen = () => {
         className="p-8 pb-32"
       >
         <BackButton />
+        <PostReservationStepBadge current={4} />
         <h2 className="text-[32px] font-black text-primary leading-[1.1] mb-2 tracking-tight uppercase">
           Análisis de Opciones
         </h2>
@@ -1557,7 +1828,7 @@ const UnitSelectionScreen = () => {
              <div className="absolute top-0 right-0 p-4 opacity-5">
                <Info className="w-32 h-32" />
              </div>
-             <h3 className="text-sm font-black uppercase tracking-widest mb-4 opacity-70">Veredicto AMENA</h3>
+             <h3 className="text-sm font-black uppercase tracking-widest mb-4 opacity-70">Lectura H-Operia Intelligence</h3>
              <p className="text-xl font-black leading-tight tracking-tight mb-4">
                {analysisResult.analysis}
              </p>
@@ -1589,19 +1860,29 @@ const UnitSelectionScreen = () => {
                   <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
                     <Check className="w-3 h-3 text-accent" />
                   </div>
-                  <p className="text-[12px] font-bold text-primary">Copia de este reporte enviada a {analysisResult.email}.</p>
+                  <p className="text-[12px] font-bold text-primary">
+                    {analysisResult.email ? `Copia de este reporte enviada a ${analysisResult.email}.` : 'No se registró un correo adicional en este paso.'}
+                  </p>
                 </div>
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3 text-accent" />
+                {analysisResult.email && (
+                  <div className="flex gap-3">
+                    <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-accent" />
+                    </div>
+                    <p className="text-[12px] font-bold text-primary">Se ha enviado un registro de tus comentarios y de nuestras interacciones al correo {analysisResult.email}.</p>
                   </div>
-                  <p className="text-[12px] font-bold text-primary">Se ha enviado un registro de tus comentarios y de nuestras interacciones al correo {analysisResult.email}.</p>
-                </div>
+                )}
              </div>
           </div>
 
           <button 
-            onClick={() => navigateTo('final_success', 17)}
+            onClick={() => {
+              trackPostReservationEvent('comments_analysis_completed', {
+                next_required_step: 'marta_contact',
+              });
+
+              navigateTo('acompanamiento_amena', 12);
+            }}
             className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform mt-8"
           >
             CONFIRMAR Y FINALIZAR <ArrowRight className="w-6 h-6" />
@@ -1623,10 +1904,24 @@ const UnitSelectionScreen = () => {
   };
 
   const AcompanamientoAmenaScreen = () => {
-    const [showSchedule, setShowSchedule] = useState(false);
-    const [showAccessNote, setShowAccessNote] = useState(false);
+    const [showSchedule, setShowSchedule] = useState(
+      martaScheduleDraftOpen.current || postReservationStatus.martaContactPreference === 'schedule_call'
+    );
+    const [showAccessNote, setShowAccessNote] = useState(postReservationStatus.martaContactPreference === 'whatsapp_link');
+    const [scheduleConfirmed, setScheduleConfirmed] = useState(postReservationStatus.martaContactPreference === 'schedule_call');
+    const [whatsappLinkConfirmed, setWhatsappLinkConfirmed] = useState(postReservationStatus.martaContactPreference === 'whatsapp_link');
 
     const reservationId = selectedUnit?.id ? `AMENA-${selectedUnit.id.toUpperCase()}` : 'AMENA-RESERVA-DEMO';
+    const selectedMartaAction = postReservationStatus.martaContactPreference;
+    const canContinueMarta = selectedMartaAction === 'talk_now' || scheduleConfirmed || whatsappLinkConfirmed;
+
+    const chooseMartaAction = (preference: Exclude<MartaContactPreference, null>) => {
+      setPostReservationStatus((current) => ({ ...current, martaContactPreference: preference }));
+      trackPostReservationEvent('marta_contact_selected', {
+        marta_contact_preference: preference,
+        next_required_step: 'whatsapp_receipt_confirmation',
+      });
+    };
 
     return (
       <motion.div 
@@ -1634,11 +1929,12 @@ const UnitSelectionScreen = () => {
         className="p-8 pb-32"
       >
         <BackButton />
+        <PostReservationStepBadge current={5} />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-6 tracking-tight uppercase">
-          Acompañamiento AMENA
+          Acompañamiento Inteligente
         </h2>
         <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
-          Tu reserva ha sido registrada correctamente. Ahora puedes acceder a un acompañamiento flexible y personalizado para resolver dudas, compartir información importante y avanzar a tu propio ritmo.
+          Tu reserva ha sido registrada correctamente. Elige cómo deseas hablar con Marta para continuar el acompañamiento obligatorio de tu pre reserva.
         </p>
 
         <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm mb-8">
@@ -1647,11 +1943,11 @@ const UnitSelectionScreen = () => {
             Avanza con claridad, a tu ritmo
           </h3>
           <p className="text-[15px] font-bold text-secondary/80 leading-snug mb-5">
-            Marta puede atenderte por texto o voz desde el web widget. También podrás recibir un acceso privado por correo electrónico para entrar cuando lo desees, 24/7.
+            Marta puede atenderte por texto o voz desde el espacio privado de Acompañamiento Inteligente, preparar una llamada o generar un link privado por WhatsApp.
           </p>
           <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
             <p className="text-[12px] font-bold text-primary/70 leading-snug">
-              Para acceder se utilizará el ID de tu reserva <span className="font-black text-primary">{reservationId}</span> y una clave privada enviada por correo electrónico.
+              Para acceder se utilizará el ID de tu reserva <span className="font-black text-primary">{reservationId}</span> y verificación de identidad antes de compartir información sensible.
             </p>
           </div>
         </section>
@@ -1661,34 +1957,54 @@ const UnitSelectionScreen = () => {
             <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 01</span>
             <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Hablar ahora con Marta</h3>
             <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-              Ingresa inmediatamente a tu espacio privado de Acompañamiento AMENA para conversar con Marta por texto o voz.
+              Ingresa inmediatamente a tu espacio privado de Acompañamiento Inteligente para conversar con Marta por texto o voz.
             </p>
             <button 
-              onClick={() => navigateTo('digital_agent', 14)}
+              onClick={() => {
+                martaScheduleDraftOpen.current = false;
+                setShowSchedule(false);
+                setShowAccessNote(false);
+                setScheduleConfirmed(false);
+                setWhatsappLinkConfirmed(false);
+                chooseMartaAction('talk_now');
+                (window as any).conectarVapi?.();
+              }}
               className="px-6 py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform"
             >
-              Hablar con Marta
+              Hablar ahora con Marta
             </button>
           </section>
 
           <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
             <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 02</span>
-            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Agendar conversación con Marta</h3>
+            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Agendar llamada con Marta</h3>
             <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
               Si prefieres no conversar en este momento, podrás programar un horario más cómodo para continuar tu acompañamiento posteriormente.
             </p>
             <button 
-              onClick={() => setShowSchedule(!showSchedule)}
+              onClick={() => {
+                martaScheduleDraftOpen.current = true;
+                setShowSchedule(true);
+                setShowAccessNote(false);
+                setScheduleConfirmed(false);
+                setWhatsappLinkConfirmed(false);
+                setPostReservationStatus((current) => (
+                  current.martaContactPreference === null
+                    ? current
+                    : { ...current, martaContactPreference: null }
+                ));
+              }}
               className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
             >
-              Agendar conversación
+              Agendar llamada
             </button>
             <p className="text-[12px] font-bold text-secondary/60 leading-snug mt-4">
-              Recibirás por correo electrónico tu acceso privado utilizando el ID de tu reserva y una clave privada de acceso.
+              Recibirás la llamada de Marta en el número y horario que prefieras.
             </p>
 
             {showSchedule && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-4 pt-6 border-t border-primary/10">
+                <h4 className="text-[13px] font-black text-primary uppercase tracking-widest">Formulario de llamada</h4>
                 <div>
                   <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Día preferido</label>
                   <input type="date" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
@@ -1698,41 +2014,255 @@ const UnitSelectionScreen = () => {
                   <input type="time" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">E-mail para recibir el acceso</label>
-                  <input type="email" placeholder="usuario@correo.com" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
+                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Número de teléfono móvil</label>
+                  <input type="text" placeholder="7060-0000" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
                 </div>
                 <button 
-                  onClick={() => setShowAccessNote(true)}
+                  onClick={() => {
+                    martaScheduleDraftOpen.current = true;
+                    setScheduleConfirmed(true);
+                    setWhatsappLinkConfirmed(false);
+                    setShowAccessNote(false);
+                    chooseMartaAction('schedule_call');
+                  }}
                   className="w-full py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest"
                 >
-                  Confirmar horario
+                  Confirmar llamada
                 </button>
+                {scheduleConfirmed && (
+                  <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                    <p className="text-[13px] font-bold text-accent text-center leading-snug">
+                      Tu solicitud de llamada con Marta quedó preparada. Puedes continuar al siguiente paso.
+                    </p>
+                  </div>
+                )}
               </motion.div>
             )}
           </section>
 
           <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
             <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 03</span>
-            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Acceso flexible a Marta</h3>
+            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Recibir link por WhatsApp</h3>
             <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-              Aquí podrás llamarle tú a Marta en el momento que quieras. Tu espacio de Acompañamiento AMENA permanecerá disponible sin presión y a tu propio ritmo.
+              Te enviaremos un link privado por WhatsApp para hablar con Marta más adelante o iniciar contacto posteriormente.
             </p>
             <button 
-              onClick={() => setShowAccessNote(true)}
+              onClick={() => {
+                martaScheduleDraftOpen.current = false;
+                setShowAccessNote(true);
+                setShowSchedule(false);
+                setScheduleConfirmed(false);
+                setWhatsappLinkConfirmed(true);
+                chooseMartaAction('whatsapp_link');
+              }}
               className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
             >
-              Recibir acceso privado
+              Solicitar link
             </button>
           </section>
 
           {showAccessNote && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-accent/5 rounded-[2rem] border border-accent/10">
               <p className="text-[13px] font-bold text-accent text-center leading-snug">
-                Simulación demo: se enviará al correo electrónico el link privado, el ID de reserva <span className="font-black">{reservationId}</span> y la clave privada de acceso para Acompañamiento AMENA.
+                Se preparó el envío del link privado por WhatsApp asociado a tu ID de reserva. Podrás hablar con Marta más adelante con verificación de identidad.
               </p>
             </motion.div>
           )}
         </div>
+
+        <button 
+          onClick={() => {
+            if (!canContinueMarta) return;
+            navigateTo('whatsapp_confirmation', 12);
+          }}
+          disabled={!canContinueMarta}
+          className="w-full mt-10 py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
+        >
+          CONTINUAR <ArrowRight className="w-6 h-6" />
+        </button>
+      </motion.div>
+    );
+  };
+
+  const WhatsAppConfirmationScreen = () => {
+    const [hasReceivedWhatsApp, setHasReceivedWhatsApp] = useState(postReservationStatus.whatsappReceiptConfirmed);
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+        className="p-8 pb-32"
+      >
+        <BackButton />
+        <PostReservationStepBadge current={6} />
+        <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
+          Confirma tu WhatsApp
+        </h2>
+        <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
+          Para continuar, confirma que recibiste el mensaje de WhatsApp con los detalles relevantes de tu reserva.
+        </p>
+
+        <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm mb-8">
+          <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-4 py-2 rounded-full mb-5">Confirmación obligatoria</span>
+          <p className="text-[15px] font-bold text-secondary/80 leading-snug mb-6">
+            El mensaje debe incluir la referencia de tu pre reserva, la unidad seleccionada y el siguiente paso de contacto con AMENA.
+          </p>
+          <label className="flex items-start gap-4 p-5 rounded-2xl bg-primary/5 border border-primary/10 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hasReceivedWhatsApp}
+              onChange={(event) => setHasReceivedWhatsApp(event.target.checked)}
+              className="mt-1 w-5 h-5 accent-[var(--brand-accent)]"
+            />
+            <span className="text-[13px] font-black text-primary leading-snug">
+              Confirmo que recibí el WhatsApp con los detalles relevantes de mi reserva.
+            </span>
+          </label>
+        </section>
+
+        <button 
+          onClick={() => {
+            if (!hasReceivedWhatsApp) return;
+            setPostReservationStatus((current) => ({ ...current, whatsappReceiptConfirmed: true }));
+            trackPostReservationEvent('whatsapp_receipt_confirmed', {
+              next_required_step: 'sales_office_appointment',
+            });
+            navigateTo('office_schedule', 13);
+          }}
+          disabled={!hasReceivedWhatsApp}
+          className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
+        >
+          CONFIRMAR <ArrowRight className="w-6 h-6" />
+        </button>
+      </motion.div>
+    );
+  };
+
+  const OfficeScheduleScreen = () => (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+      className="p-8 pb-32"
+    >
+      <BackButton />
+      <PostReservationStepBadge current={7} />
+      <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
+        Agenda cita en oficina de ventas
+      </h2>
+      <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
+        Esta cita servirá para conocernos, validar información, firmar documentos y recibir orientación sobre los siguientes pasos.
+      </p>
+
+      <div className="bg-[#f7f2eb] p-6 rounded-[2rem] border border-[#e8dfd1] mb-8">
+        <p className="text-[13px] font-black text-primary uppercase tracking-tight leading-tight">
+          Pre reserva registrada · {selectedType === 'apartamentos' ? 'Apartamento' : 'Casa'} {selectedUnit?.label || (selectedType === 'apartamentos' ? 'Apt 21' : 'L-01')} · {selectedType === 'apartamentos' ? 'Torre' : 'Manzana'} {selectedTorre?.label || (selectedType === 'apartamentos' ? 'T5' : 'MZ A')}
+        </p>
+      </div>
+
+      <div className="space-y-6 mb-12 text-left">
+        <div>
+          <label className="block text-[11px] font-black text-primary uppercase tracking-widest mb-2 px-1">Fecha deseada</label>
+          <input type="date" className="w-full p-5 rounded-2xl border-2 border-accent/10 focus:border-accent outline-none font-bold text-lg transition-all" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-black text-primary uppercase tracking-widest mb-2 px-1">Hora deseada</label>
+          <input type="time" className="w-full p-5 rounded-2xl border-2 border-accent/10 focus:border-accent outline-none font-bold text-lg transition-all" />
+        </div>
+      </div>
+
+      <button 
+        onClick={() => {
+          setPostReservationStatus((current) => ({ ...current, salesOfficeAppointmentScheduled: true }));
+          trackPostReservationEvent('sales_office_appointment_scheduled', {
+            appointment_location: 'sales_office',
+            next_required_step: 'project_visit',
+          });
+          navigateTo('project_visit_schedule', 14);
+        }}
+        className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
+      >
+        AGENDAR <ArrowRight className="w-6 h-6" />
+      </button>
+    </motion.div>
+  );
+
+  const ProjectVisitScheduleScreen = () => {
+    const [showVisitSchedule, setShowVisitSchedule] = useState(false);
+    const [confirmedProjectVisitPreference, setConfirmedProjectVisitPreference] = useState<ProjectVisitPreference>(
+      postReservationStatus.projectVisitPreference === 'schedule_visit' ? 'schedule_visit' : null
+    );
+
+    const completeProjectVisitStep = (preference: Exclude<ProjectVisitPreference, null>) => {
+      setConfirmedProjectVisitPreference(preference);
+      setPostReservationStatus((current) => ({ ...current, projectVisitPreference: preference }));
+      trackPostReservationEvent('project_visit_step_completed', {
+        project_visit_preference: preference,
+        next_required_step: 'post_reservation_complete',
+      });
+    };
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+        className="p-8 pb-32"
+      >
+        <BackButton />
+        <PostReservationStepBadge current={8} />
+        <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
+          Visita al proyecto
+        </h2>
+        <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
+          Agenda una fecha tentativa para conocer el proyecto con acompañamiento del equipo comercial.
+        </p>
+
+        <div className="space-y-6">
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción principal</span>
+            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Agendar visita</h3>
+            <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
+              Elige una fecha tentativa para conocer el proyecto con acompañamiento del equipo comercial.
+            </p>
+            <button 
+              onClick={() => setShowVisitSchedule(!showVisitSchedule)}
+              className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
+            >
+              Agendar
+            </button>
+
+            {showVisitSchedule && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-4 pt-6 border-t border-primary/10">
+                <div>
+                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Fecha deseada</label>
+                  <input type="date" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Hora deseada</label>
+                  <input type="time" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
+                </div>
+                <button 
+                  onClick={() => completeProjectVisitStep('schedule_visit')}
+                  className="w-full py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest"
+                >
+                  Confirmar visita
+                </button>
+                {confirmedProjectVisitPreference === 'schedule_visit' && (
+                  <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                    <p className="text-[13px] font-bold text-accent text-center leading-snug">
+                      Visita tentativa registrada. El equipo de AMENA confirmará disponibilidad.
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </section>
+        </div>
+
+        {confirmedProjectVisitPreference && (
+          <button
+            onClick={() => navigateTo('final_success', 15)}
+            className="w-full mt-10 py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
+          >
+            CONTINUAR AL CIERRE FINAL <ArrowRight className="w-6 h-6" />
+          </button>
+        )}
       </motion.div>
     );
   };
@@ -1820,7 +2350,13 @@ const UnitSelectionScreen = () => {
       </p>
 
       <button 
-        onClick={() => navigateTo('final_success', 17)}
+        onClick={() => {
+              trackPostReservationEvent('comments_analysis_completed', {
+                next_required_step: 'marta_contact',
+              });
+
+              navigateTo('acompanamiento_amena', 12);
+            }}
         className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
         CONFIRMAR LLAMADA
@@ -1866,7 +2402,14 @@ const UnitSelectionScreen = () => {
       </div>
 
       <button 
-        onClick={() => navigateTo('final_success', 17)}
+        onClick={() => {
+          setPostReservationStatus((current) => ({ ...current, projectVisitPreference: 'schedule_visit' }));
+          trackPostReservationEvent('project_visit_step_completed', {
+            project_visit_preference: 'schedule_visit',
+            next_required_step: 'post_reservation_complete',
+          });
+          navigateTo('final_success', 15);
+        }}
         className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
       >
         CONFIRMAR CITA
@@ -1887,6 +2430,7 @@ const UnitSelectionScreen = () => {
           <ChevronLeft className="w-4 h-4" /> REGRESAR AL INICIO
         </button>
       </div>
+      <PostReservationStepBadge current={9} />
       <h2 className="text-[40px] font-black text-accent leading-none mb-6 tracking-tight uppercase">
         Proceso finalizado correctamente
       </h2>
@@ -1910,7 +2454,7 @@ const UnitSelectionScreen = () => {
           <span className="opacity-60">Unidad:</span> {selectedUnit?.label || 'Apt 21'}
         </p>
         <p className="text-[14px] font-black text-primary uppercase tracking-tight flex flex-wrap gap-x-2">
-           <span className="opacity-60">Acción:</span> Llamada agendada correctamente
+           <span className="opacity-60">Acción:</span> Flujo post-reserva completado
         </p>
       </div>
 
@@ -1932,8 +2476,22 @@ const UnitSelectionScreen = () => {
       </div>
 
       <button 
+        onClick={() => navigateTo('next_steps_instructions', 10)}
+        className="w-full py-6 mt-12 rounded-2xl bg-accent text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
+      >
+        REVISAR PASOS FINALES
+      </button>
+
+      <button 
+        onClick={() => navigateTo('acompanamiento_amena', 12)}
+        className="w-full py-6 mt-4 rounded-2xl bg-white border-2 border-accent/20 text-accent font-black uppercase text-xs tracking-widest shadow-sm active:scale-95 transition-transform"
+      >
+        CONTACTAR A MARTA
+      </button>
+
+      <button 
         onClick={() => navigateTo('welcome', 1)}
-        className="w-full py-6 mt-12 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
+        className="w-full py-6 mt-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
       >
         VOLVER AL INICIO
       </button>
@@ -1964,6 +2522,9 @@ const UnitSelectionScreen = () => {
           {screen === 'further_steps' && <FurtherStepsScreen key="further" />}
           {screen === 'acompanamiento_amena' && <AcompanamientoAmenaScreen key="acompanamiento" />}
           {screen === 'next_steps_instructions' && <NextStepsInstructionsScreen key="instructions" />}
+          {screen === 'whatsapp_confirmation' && <WhatsAppConfirmationScreen key="whatsapp" />}
+          {screen === 'office_schedule' && <OfficeScheduleScreen key="office" />}
+          {screen === 'project_visit_schedule' && <ProjectVisitScheduleScreen key="project-visit" />}
           {screen === 'user_comments' && <UserCommentsScreen key="comments" />}
           {screen === 'analysis_report' && <AnalysisReportScreen key="report" />}
           {screen === 'digital_agent' && <DigitalAgentScreen key="agent" />}
@@ -1998,8 +2559,17 @@ imageUrl="./manzanas/Sector01Manzanas.png"
   message="Visualiza las manzanas activas dentro del sector seleccionado."
 />
 
+<ImageModal
+  isOpen={isLotesModalOpen}
+  onClose={() => setIsLotesModalOpen(false)}
+  title="Lotes disponibles"
+  imageUrl="./lotes/casalote.png"
+  message="Visualiza los lotes disponibles dentro de la manzana seleccionada."
+/>
+
 </div>
 );
 };
 
 export default App;
+
