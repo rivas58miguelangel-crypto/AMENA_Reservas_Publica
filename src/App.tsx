@@ -217,7 +217,7 @@ const App: React.FC = () => {
     else if (screen === 'reservation_form') navigateTo('unit_detail', 8);
     else if (screen === 'further_steps') navigateTo('reservation_form', 9);
     else if (screen === 'next_steps_instructions') navigateTo('reservation_form', 9);
-    else if (screen === 'acompanamiento_amena') navigateTo('next_steps_instructions', 10);
+    else if (screen === 'acompanamiento_amena') navigateTo('analysis_report', 13);
     else if (screen === 'whatsapp_confirmation') navigateTo('acompanamiento_amena', 11);
     else if (screen === 'office_schedule') navigateTo('whatsapp_confirmation', 12);
     else if (screen === 'project_visit_schedule') navigateTo('office_schedule', 13);
@@ -1703,12 +1703,6 @@ const UnitSelectionScreen = () => {
               </p>
             </section>
             <button
-              onClick={handleBack}
-              className="w-full py-5 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
-            >
-              REGRESAR
-            </button>
-            <button
               onClick={continueWithoutComments}
               className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
             >
@@ -1886,13 +1880,6 @@ const UnitSelectionScreen = () => {
             className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform mt-8"
           >
             CONFIRMAR Y FINALIZAR <ArrowRight className="w-6 h-6" />
-          </button>
-
-          <button 
-            onClick={handleLogout}
-            className="w-full py-6 rounded-2xl border-2 border-primary/10 text-primary font-black uppercase text-xs tracking-widest hover:bg-primary/5 transition-all"
-          >
-            CERRAR SESIÓN
           </button>
 
           <p className="text-[10px] font-bold text-secondary/50 text-center uppercase tracking-widest">
@@ -2422,14 +2409,6 @@ const UnitSelectionScreen = () => {
       initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
       className="p-8 pb-32"
     >
-      <div className="mb-6">
-        <button 
-          onClick={() => navigateTo('welcome', 1)}
-          className="flex items-center gap-1 text-[10px] font-black text-primary uppercase"
-        >
-          <ChevronLeft className="w-4 h-4" /> REGRESAR AL INICIO
-        </button>
-      </div>
       <PostReservationStepBadge current={9} />
       <h2 className="text-[40px] font-black text-accent leading-none mb-6 tracking-tight uppercase">
         Proceso finalizado correctamente
@@ -2494,13 +2473,6 @@ const UnitSelectionScreen = () => {
         className="w-full py-6 mt-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
       >
         VOLVER AL INICIO
-      </button>
-
-      <button 
-        onClick={handleLogout}
-        className="w-full py-6 mt-4 rounded-2xl border-2 border-primary/20 text-primary font-black uppercase text-xs tracking-widest hover:bg-primary/5 transition-all"
-      >
-        CERRAR SESIÓN
       </button>
     </motion.div>
   );
