@@ -138,6 +138,16 @@ const App: React.FC = () => {
   const [postReservationStatus, setPostReservationStatus] = useState<PostReservationStatus>(initialPostReservationStatus);
 
   const totalSteps = 15;
+  const isApartments = selectedType === 'apartamentos';
+  const reservationId = selectedUnit?.id ? `AMENA-${selectedUnit.id.toUpperCase()}` : 'AMENA-RESERVA-DEMO';
+  const reservationSummaryItems = [
+    { label: 'Proyecto', value: projectBranding.projectName },
+    { label: isApartments ? 'Torre' : 'Manzana', value: selectedTorre?.label },
+    ...(isApartments ? [{ label: 'Nivel', value: selectedLevel?.name }] : []),
+    { label: 'Modelo', value: selectedModel?.name },
+    { label: isApartments ? 'Unidad' : 'Lote', value: selectedUnit?.label },
+    { label: 'Reservation ID', value: reservationId },
+  ].filter((item) => Boolean(item.value));
 
   const navigateTo = (newScreen: Screen, newStep: number) => {
     setScreen(newScreen);
@@ -274,6 +284,24 @@ const App: React.FC = () => {
   );
 
   const PostReservationStepBadge = (_props?: { current?: number }) => null;
+
+  const ReservationContinuityBadge = () => (
+    <section className="mb-6 rounded-2xl border border-accent/10 bg-white/70 p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-widest text-accent">Reserva activa</p>
+          <p className="text-[15px] font-black uppercase tracking-tight text-primary">{reservationId}</p>
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-black uppercase tracking-tight text-primary/70">
+          {reservationSummaryItems.map((item) => (
+            <span key={item.label}>
+              <span className="opacity-50">{item.label}:</span> {item.value}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 
   const ImageModal = ({ isOpen, onClose, title, imageUrl, message }: { isOpen: boolean, onClose: () => void, title: string, imageUrl?: string, message?: string }) => (
     <AnimatePresence>
@@ -1506,6 +1534,7 @@ const UnitSelectionScreen = () => {
     >
       <BackButton />
       <PostReservationStepBadge current={2} />
+      <ReservationContinuityBadge />
       <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
         Instrucciones post-reserva
       </h2>
@@ -1658,6 +1687,7 @@ const UnitSelectionScreen = () => {
       >
         <BackButton />
         <PostReservationStepBadge current={3} />
+      <ReservationContinuityBadge />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-2 tracking-tight uppercase">
           Comentarios del Interesado
         </h2>
@@ -1807,6 +1837,7 @@ const UnitSelectionScreen = () => {
       >
         <BackButton />
         <PostReservationStepBadge current={4} />
+      <ReservationContinuityBadge />
         <h2 className="text-[32px] font-black text-primary leading-[1.1] mb-2 tracking-tight uppercase">
           Análisis de Opciones
         </h2>
@@ -1898,7 +1929,6 @@ const UnitSelectionScreen = () => {
     const [scheduleConfirmed, setScheduleConfirmed] = useState(postReservationStatus.martaContactPreference === 'schedule_call');
     const [whatsappLinkConfirmed, setWhatsappLinkConfirmed] = useState(postReservationStatus.martaContactPreference === 'whatsapp_link');
 
-    const reservationId = selectedUnit?.id ? `AMENA-${selectedUnit.id.toUpperCase()}` : 'AMENA-RESERVA-DEMO';
     const selectedMartaAction = postReservationStatus.martaContactPreference;
     const canContinueMarta = selectedMartaAction === 'talk_now' || scheduleConfirmed || whatsappLinkConfirmed;
 
@@ -1917,6 +1947,7 @@ const UnitSelectionScreen = () => {
       >
         <BackButton />
         <PostReservationStepBadge current={5} />
+      <ReservationContinuityBadge />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-6 tracking-tight uppercase">
           Acompañamiento Inteligente
         </h2>
@@ -2081,6 +2112,7 @@ const UnitSelectionScreen = () => {
       >
         <BackButton />
         <PostReservationStepBadge current={6} />
+      <ReservationContinuityBadge />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
           Confirma tu WhatsApp
         </h2>
@@ -2131,6 +2163,7 @@ const UnitSelectionScreen = () => {
     >
       <BackButton />
       <PostReservationStepBadge current={7} />
+      <ReservationContinuityBadge />
       <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
         Agenda cita en oficina de ventas
       </h2>
@@ -2193,6 +2226,7 @@ const UnitSelectionScreen = () => {
       >
         <BackButton />
         <PostReservationStepBadge current={8} />
+      <ReservationContinuityBadge />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
           Visita al proyecto
         </h2>
@@ -2410,6 +2444,7 @@ const UnitSelectionScreen = () => {
       className="p-8 pb-32"
     >
       <PostReservationStepBadge current={9} />
+      <ReservationContinuityBadge />
       <h2 className="text-[40px] font-black text-accent leading-none mb-6 tracking-tight uppercase">
         Proceso finalizado correctamente
       </h2>
