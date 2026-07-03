@@ -36,6 +36,14 @@ type Screen =
   | 'reservation_form'
   | 'further_steps'
   | 'acompanamiento_amena'
+  | 'marta_now_detail'
+  | 'marta_schedule_detail'
+  | 'marta_link_detail'
+  | 'advisor_call_detail'
+  | 'advisor_office_detail'
+  | 'advisor_visit_detail'
+  | 'accompaniment_summary'
+  | 'official_closure'
   | 'next_steps_instructions'
   | 'whatsapp_confirmation'
   | 'office_schedule'
@@ -49,6 +57,11 @@ type Screen =
 
 type MartaContactPreference = 'talk_now' | 'schedule_call' | 'whatsapp_link' | null;
 type ProjectVisitPreference = 'request_visit' | 'schedule_visit' | null;
+type AccompanimentSelection = {
+  route: 'marta' | 'advisor';
+  label: string;
+  detail?: string;
+};
 
 type PostReservationStatus = {
   instructionsAcknowledged: boolean;
@@ -136,6 +149,7 @@ const App: React.FC = () => {
   const [inspectingModel, setInspectingModel] = useState<Model | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [postReservationStatus, setPostReservationStatus] = useState<PostReservationStatus>(initialPostReservationStatus);
+  const [accompanimentSelections, setAccompanimentSelections] = useState<AccompanimentSelection[]>([]);
 
   const totalSteps = 15;
   const isApartments = selectedType === 'apartamentos';
@@ -154,6 +168,19 @@ const App: React.FC = () => {
     setStep(newStep);
     window.scrollTo(0, 0);
   };
+
+  const registerAccompanimentSelection = (selection: AccompanimentSelection) => {
+    setAccompanimentSelections((current) => [
+      ...current.filter((item) => item.label !== selection.label),
+      selection,
+    ]);
+  };
+
+  const formatScheduleDetail = (schedule?: { date: string; time: string }) => (
+    schedule?.date && schedule?.time
+      ? `Preferencia recibida: ${schedule.date} a las ${schedule.time}.`
+      : 'Preferencia recibida para seguimiento posterior.'
+  );
   const trackSelection = (
   step:
     | "housing_type"
@@ -209,6 +236,7 @@ const App: React.FC = () => {
     setSelectedUnit(null);
     setAnalysisResult(null);
     setPostReservationStatus(initialPostReservationStatus);
+    setAccompanimentSelections([]);
     martaScheduleDraftOpen.current = false;
     window.scrollTo(0, 0);
   };
@@ -228,6 +256,14 @@ const App: React.FC = () => {
     else if (screen === 'further_steps') navigateTo('reservation_form', 9);
     else if (screen === 'next_steps_instructions') navigateTo('reservation_form', 9);
     else if (screen === 'acompanamiento_amena') navigateTo('analysis_report', 13);
+    else if (screen === 'marta_now_detail') navigateTo('acompanamiento_amena', 12);
+    else if (screen === 'marta_schedule_detail') navigateTo('acompanamiento_amena', 12);
+    else if (screen === 'marta_link_detail') navigateTo('acompanamiento_amena', 12);
+    else if (screen === 'advisor_call_detail') navigateTo('acompanamiento_amena', 12);
+    else if (screen === 'advisor_office_detail') navigateTo('acompanamiento_amena', 12);
+    else if (screen === 'advisor_visit_detail') navigateTo('acompanamiento_amena', 12);
+    else if (screen === 'accompaniment_summary') navigateTo('acompanamiento_amena', 12);
+    else if (screen === 'official_closure') navigateTo('accompaniment_summary', 13);
     else if (screen === 'whatsapp_confirmation') navigateTo('acompanamiento_amena', 11);
     else if (screen === 'office_schedule') navigateTo('whatsapp_confirmation', 12);
     else if (screen === 'project_visit_schedule') navigateTo('office_schedule', 13);
@@ -1616,12 +1652,11 @@ const UnitSelectionScreen = () => {
   );
 
   const UserCommentsScreen = () => {
-    const [email, setEmail] = useState('');
     const [blocks, setBlocks] = useState<{ title: string; text: string; attachments: string[] }[]>([
       { title: '', text: '', attachments: [] }
     ]);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [commentsChoice, setCommentsChoice] = useState<'yes' | 'no' | null>(null);
+    const [isRefining, setIsRefining] = useState(false);
+    const [commentsChoice, setCommentsChoice] = useState<'yes' | null>(null);
 
     const addBlock = () => {
       setBlocks([...blocks, { title: '', text: '', attachments: [] }]);
@@ -1635,75 +1670,136 @@ const UnitSelectionScreen = () => {
 
     const handleFileUpload = (index: number) => {
       const newBlocks = [...blocks];
-      const mockFiles = ['documento.pdf', 'imagen_referencia.png', 'analisis.xlsx'];
+      const mockFiles = ['documento.pdf', 'imagen_referencia.png', 'referencia.xlsx'];
       const randomFile = mockFiles[Math.floor(Math.random() * mockFiles.length)];
       newBlocks[index].attachments = [...newBlocks[index].attachments, randomFile];
       setBlocks(newBlocks);
     };
 
-    const buildAnalysisResult = (resultEmail: string, submittedBlocks: typeof blocks) => ({
-      email: resultEmail,
-      blocks: submittedBlocks,
-      analysis: submittedBlocks.length > 0
-        ? "Basado en tu información, existe una PROBABILIDAD ALTA (85%) de éxito en tu trámite si se siguen las recomendaciones adjuntas."
-        : "No registraste comentarios adicionales en este momento. AMENA continuará el acompañamiento con la información de tu pre reserva.",
-      options: [
-        { title: "Opción de Financiamiento Directo", detail: "Aprovecha la tasa preferencial AMENA para clientes con tu perfil laboral." },
-        { title: "Optimización de Espacios", detail: "Se recomienda el modelo con balcón extendido para mayor ventilación natural." },
-        { title: "Calendario de Documentación", detail: "Entrega tu constancia salarial antes del día 15 para congelar la tasa." }
-      ],
-      recommendation: submittedBlocks.length > 0
-        ? "SE RECOMIENDA SEGUIR EL TRÁMITE CON FIRMEZA. Tu capacidad económica y estabilidad referenciada son compatibles con los requerimientos del proyecto."
-        : "Puedes continuar el proceso sin comentarios adicionales. El equipo de AMENA podrá contactarte en los pasos posteriores si necesita ampliar información."
-    });
+    const buildRefinementResult = (submittedBlocks: typeof blocks) => {
+      const rawText = submittedBlocks
+        .map((block) => `${block.title} ${block.text}`.trim())
+        .filter(Boolean)
+        .join(' ');
+      const normalizedText = rawText.toLowerCase();
+      const mentionsParking = /garage|garaje|pickup|pick up|carro|vehiculo|vehículo|parqueo|estacionar|ampliar|ampliacion|ampliación|maniobrar|techo|sombra/.test(normalizedText);
+      const hasComments = submittedBlocks.length > 0;
 
-    const continueWithoutComments = () => {
-      setAnalysisResult(buildAnalysisResult('', []));
-      navigateTo('analysis_report', 13);
+      const parkingRecommendations = [
+        'Podrías aclarar si necesitas espacio adicional solo para estacionar o también para maniobrar con el pickup cargado.',
+        'Puedes preguntar si existe alguna alternativa de sombra, techo o protección para el área de parqueo.',
+        'Conviene indicar si el segundo vehículo requiere acceso diario o solo espacio ocasional.',
+        'Puedes pedir que el asesor confirme qué ampliaciones son técnicamente posibles y cuáles requieren revisión del proyecto.',
+      ];
+
+      const generalRecommendations = [
+        'Puedes separar tu comentario entre lo que necesitas confirmar, lo que te preocupa y lo que deseas solicitar.',
+        'Conviene indicar qué punto es más urgente para que el asesor lo revise primero.',
+        'Puedes reformular cualquier expectativa como pregunta para revisión humana, evitando asumir aprobación automática.',
+        'Si hay documentos o referencias, puedes mencionar qué parte quieres que el equipo tome en cuenta.',
+      ];
+
+      const observations = hasComments
+        ? mentionsParking ? parkingRecommendations : generalRecommendations
+        : ['No agregaste comentarios en este paso. Puedes continuar al mapa de Acompañamiento Inteligente.'];
+
+      const prompts = mentionsParking
+        ? [
+            '¿El pickup necesita entrar cargado todos los días o solo en ocasiones específicas?',
+            '¿La prioridad es ampliar espacio, mejorar maniobra o proteger los vehículos?',
+            '¿Quieres que el asesor revise alternativas permitidas antes de confirmar una expectativa?',
+          ]
+        : [
+            '¿Qué punto necesitas que el asesor revise primero?',
+            '¿Qué información te falta para sentirte más tranquilo?',
+            '¿Hay alguna expectativa que convenga convertir en pregunta para revisión humana?',
+          ];
+
+      const draft = mentionsParking
+        ? 'Necesito revisar si existe alguna alternativa para ampliar o adaptar el área de parqueo. Tenemos un pickup grande que a veces permanece cargado y también un carro pequeño. Me gustaría saber si hay opciones para estacionar y maniobrar mejor, si puede considerarse sombra o protección, y qué ampliaciones serían técnicamente posibles o requerirían revisión del proyecto.'
+        : rawText
+          ? `Quisiera que el asesor revise estos puntos: ${rawText}`
+          : '';
+
+      return {
+        blocks: submittedBlocks,
+        summary: hasComments
+          ? 'Marta preparó sugerencias para que tus comentarios lleguen más claros al asesor.'
+          : 'Puedes continuar con la información registrada durante tu reserva.',
+        observations,
+        prompts,
+        draft,
+        advisorNotes: [
+          'El asesor humano revisará la versión final dentro del expediente único.',
+          'H-OperIA Intelligence puede apoyar la organización de señales, prioridades y contexto.',
+          'Ninguna sugerencia implica aprobación, promesa, negociación o compromiso del proyecto.',
+        ],
+      };
     };
 
-    const runAnalysis = () => {
-      const trimmedEmail = email.trim();
-      const submittedBlocks = blocks.filter((block) => 
+    const continueWithoutComments = () => {
+      setAnalysisResult(null);
+      trackPostReservationEvent('comments_skipped', {
+        next_required_step: 'accompaniment_map',
+      });
+      navigateTo('acompanamiento_amena', 12);
+    };
+
+    const runRefinement = () => {
+      const submittedBlocks = blocks.filter((block) =>
         block.title.trim() || block.text.trim() || block.attachments.length > 0
       );
 
-      if (!trimmedEmail) {
-        alert("Por favor completa tu email.");
-        return;
-      }
-      setIsAnalyzing(true);
+      setIsRefining(true);
       setTimeout(() => {
-        setIsAnalyzing(false);
-        setAnalysisResult(buildAnalysisResult(trimmedEmail, submittedBlocks));
+        setIsRefining(false);
+        setAnalysisResult(buildRefinementResult(submittedBlocks));
+        trackPostReservationEvent('comments_refinement_completed', {
+          comments_blocks: submittedBlocks.length,
+          next_required_step: 'accompaniment_map',
+        });
         navigateTo('analysis_report', 13);
-      }, 3000);
+      }, 900);
     };
 
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
         className="p-8 pb-32"
       >
         <BackButton />
         <PostReservationStepBadge current={3} />
-      <ReservationContinuityBadge />
+        <ReservationContinuityBadge />
         <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-2 tracking-tight uppercase">
-          Comentarios del Interesado
+          Comentarios del interesado
         </h2>
-        <p className="text-secondary font-bold text-sm mb-8 opacity-70">
-          Decide si deseas agregar información adicional antes de continuar.
+        <p className="text-secondary font-bold text-sm mb-8 opacity-80 leading-snug">
+          Puedes agregar dudas, situaciones o documentos para preparar mejor tu expediente. No pediremos correo ni datos adicionales aquí.
         </p>
 
         {!commentsChoice && (
           <div className="space-y-6">
             <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
+              <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Antes de comentar</span>
               <h3 className="text-[22px] font-black text-primary leading-tight mb-4">
-                ¿Deseas compartir comentarios, dudas o documentos adicionales?
+                Marta te ayuda a ordenar, no a aprobar
               </h3>
-              <p className="text-[14px] font-bold text-secondary/70 leading-snug mb-6">
-                Puedes continuar sin agregar información adicional o compartir detalles para enriquecer el análisis.
-              </p>
+              <div className="space-y-3 mb-6">
+                <p className="text-[14px] font-bold text-secondary/85 leading-snug">
+                  Marta no vende, no negocia, no promete, no concede solicitudes y no asume compromisos. Tampoco sustituye al asesor humano.
+                </p>
+                <p className="text-[14px] font-bold text-secondary/85 leading-snug">
+                  Su función es ayudarte a convertir ideas, dudas e intereses en preguntas y requerimientos más claros para tu expediente único.
+                </p>
+                <p className="text-[14px] font-bold text-secondary/85 leading-snug">
+                  El asesor humano y el equipo comercial revisarán después la información. H-OperIA Intelligence puede apoyar internamente organizando señales, prioridades y contexto.
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10 mb-6">
+                <p className="text-[13px] font-black text-accent leading-snug">
+                  Si planteas una expectativa que el proyecto no puede confirmar, Marta ayudará a reformularla como pregunta o requerimiento para revisión humana.
+                </p>
+              </div>
               <div className="space-y-3">
                 <button
                   onClick={() => setCommentsChoice('yes')}
@@ -1712,7 +1808,7 @@ const UnitSelectionScreen = () => {
                   Sí, deseo agregar comentarios
                 </button>
                 <button
-                  onClick={() => setCommentsChoice('no')}
+                  onClick={continueWithoutComments}
                   className="w-full py-5 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
                 >
                   No deseo agregar comentarios ahora
@@ -1722,224 +1818,222 @@ const UnitSelectionScreen = () => {
           </div>
         )}
 
-        {commentsChoice === 'no' && (
+        {commentsChoice === 'yes' && (
           <div className="space-y-6">
-            <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
-              <h3 className="text-[22px] font-black text-primary leading-tight mb-4">
-                Continuar sin comentarios
+            <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+              <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Refinamiento inteligente</span>
+              <h3 className="text-[22px] font-black text-primary leading-tight mb-3">
+                Cuéntanos qué quieres ordenar mejor
               </h3>
-              <p className="text-[14px] font-bold text-secondary/70 leading-snug">
-                No se solicitará email, comentarios ni archivos en este paso. Puedes regresar o avanzar al análisis demo del flujo.
+              <p className="text-[14px] font-bold text-secondary/80 leading-snug">
+                Escribe dudas, intereses, necesidades o situaciones que quieras dejar mejor preparadas para el seguimiento humano.
               </p>
             </section>
-            <button
-              onClick={continueWithoutComments}
-              className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform"
-            >
-              CONTINUAR <ArrowRight className="w-6 h-6" />
-            </button>
-          </div>
-        )}
 
-        {commentsChoice === 'yes' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-[2rem] border-2 border-accent/10 shadow-lg">
-            <label className="block text-[11px] font-black text-primary uppercase tracking-widest mb-2 px-1">Tu E-mail para reportes</label>
-            <p className="text-[12px] font-bold text-secondary/60 mb-4">
-              Email obligatorio en esta opción. Comentarios y archivos opcionales.
-            </p>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="usuario@ejemplo.com" 
-              className="w-full p-4 rounded-xl border border-primary/10 focus:border-accent outline-none font-bold text-lg transition-all" 
-            />
-          </div>
+            <div className="space-y-4">
+              {blocks.map((block, index) => (
+                <div key={index} className="bg-white p-8 rounded-[2.5rem] border border-accent/5 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full">Bloque {index + 1}</span>
+                  </div>
 
-          <div className="space-y-4">
-            {blocks.map((block, index) => (
-              <div key={index} className="bg-white p-8 rounded-[2.5rem] border border-accent/5 shadow-sm space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full">Bloque {index + 1}</span>
-                </div>
-                
-                <div>
-                  <input 
-                    type="text"
-                    value={block.title}
-                    onChange={(e) => updateBlock(index, 'title', e.target.value)}
-                    placeholder="Título del comentario (Ej: Dudas Financieras)"
-                    className="w-full text-2xl font-black text-primary bg-transparent border-none outline-none placeholder:text-primary/20"
+                  <div>
+                    <input
+                      type="text"
+                      value={block.title}
+                      onChange={(e) => updateBlock(index, 'title', e.target.value)}
+                      placeholder="Tema del comentario"
+                      className="w-full text-2xl font-black text-primary bg-transparent border-none outline-none placeholder:text-primary/25"
+                    />
+                    <div className="h-px bg-primary/10 w-16 mt-2" />
+                  </div>
+
+                  <textarea
+                    value={block.text}
+                    onChange={(e) => updateBlock(index, 'text', e.target.value)}
+                    placeholder="Escribe tus dudas, intereses, necesidades o situaciones que quisieras que el equipo tenga presentes..."
+                    className="w-full h-32 text-base font-bold text-secondary bg-transparent border-none outline-none resize-none placeholder:text-secondary/35 leading-snug"
                   />
-                  <div className="h-px bg-primary/10 w-16 mt-2" />
-                </div>
 
-                <textarea 
-                  value={block.text}
-                  onChange={(e) => updateBlock(index, 'text', e.target.value)}
-                  placeholder="Describe aquí tu realidad, dudas o planteamientos..."
-                  className="w-full h-32 text-lg font-bold text-secondary bg-transparent border-none outline-none resize-none placeholder:text-secondary/20"
-                />
-
-                <div className="pt-4 border-t border-primary/5">
-                   <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="pt-4 border-t border-primary/5">
+                    <div className="flex flex-wrap gap-2 mb-4">
                       {block.attachments.map((file, fIndex) => (
                         <div key={fIndex} className="flex items-center gap-2 bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10">
                           <Paperclip className="w-3 h-3 text-accent" />
                           <span className="text-[10px] font-bold text-primary">{file}</span>
                         </div>
                       ))}
-                   </div>
-                   <button 
-                     onClick={() => handleFileUpload(index)}
-                     className="flex items-center gap-2 text-accent font-black text-[11px] uppercase tracking-widest hover:opacity-80 transition-opacity"
-                   >
-                     <Upload className="w-4 h-4" /> Adjuntar archivos (PDF, ZIP, DOC...)
-                   </button>
+                    </div>
+                    <button
+                      onClick={() => handleFileUpload(index)}
+                      className="flex items-center gap-2 text-accent font-black text-[11px] uppercase tracking-widest hover:opacity-80 transition-opacity"
+                    >
+                      <Upload className="w-4 h-4" /> Adjuntar referencia
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            <button
+              onClick={addBlock}
+              className="w-full py-4 rounded-2xl border-2 border-dashed border-accent/20 text-accent font-black uppercase text-xs tracking-widest hover:bg-accent/5 transition-all flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Agregar otro comentario
+            </button>
+
+            <button
+              onClick={runRefinement}
+              disabled={isRefining}
+              className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {isRefining ? (
+                <>Ordenando información... <RefreshCw className="w-6 h-6 animate-spin" /></>
+              ) : (
+                <>MEJORAR MIS COMENTARIOS <ArrowRight className="w-6 h-6" /></>
+              )}
+            </button>
           </div>
-
-          <button 
-            onClick={addBlock}
-            className="w-full py-4 rounded-2xl border-2 border-dashed border-accent/20 text-accent font-black uppercase text-xs tracking-widest hover:bg-accent/5 transition-all flex items-center justify-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Agregar otro bloque de comentarios
-          </button>
-
-          <button 
-            onClick={runAnalysis}
-            disabled={isAnalyzing}
-            className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-50"
-          >
-            {isAnalyzing ? (
-              <>Analizando Inteligencia... <RefreshCw className="w-6 h-6 animate-spin" /></>
-            ) : (
-              <>PROCESAR ANÁLISIS IA <ArrowRight className="w-6 h-6" />
-              </>
-            )}
-          </button>
-        </div>
         )}
       </motion.div>
     );
   };
 
   const AnalysisReportScreen = () => {
-    if (!analysisResult) return <div className="p-20 text-center font-bold">Cargando reporte...</div>;
+    const [finalComments, setFinalComments] = useState(() => analysisResult?.draft ?? '');
+    const [finalCommentsSubmitted, setFinalCommentsSubmitted] = useState(false);
+
+    if (!analysisResult) {
+      return (
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 pb-32">
+          <BackButton />
+          <PostReservationStepBadge current={4} />
+          <ReservationContinuityBadge />
+          <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
+            <h2 className="text-[28px] font-black text-accent leading-tight mb-4 uppercase">No hay refinamiento pendiente</h2>
+            <p className="text-[15px] font-bold text-secondary/80 leading-snug mb-6">
+              Puedes regresar a comentarios o continuar directamente al mapa de Acompañamiento Inteligente.
+            </p>
+            <div className="space-y-3">
+              <button onClick={() => navigateTo('user_comments', 11)} className="w-full py-5 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform">
+                Volver a comentarios
+              </button>
+              <button onClick={() => navigateTo('acompanamiento_amena', 12)} className="w-full py-5 rounded-2xl bg-accent text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform">
+                Continuar a Acompañamiento Inteligente
+              </button>
+            </div>
+          </section>
+        </motion.div>
+      );
+    }
+
+    const submitFinalComments = () => {
+      setFinalCommentsSubmitted(true);
+      trackPostReservationEvent('comments_final_version_submitted', {
+        final_comments_present: Boolean(finalComments.trim()),
+        next_required_step: 'accompaniment_map',
+      });
+    };
 
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
         className="p-8 pb-32"
       >
         <BackButton />
         <PostReservationStepBadge current={4} />
-      <ReservationContinuityBadge />
-        <h2 className="text-[32px] font-black text-primary leading-[1.1] mb-2 tracking-tight uppercase">
-          Análisis de Opciones
+        <ReservationContinuityBadge />
+        <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-3 tracking-tight uppercase">
+          Ordenemos mejor tus comentarios
         </h2>
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
-            <Brain className="w-4 h-4 text-accent" />
-          </div>
-          <p className="text-[10px] font-black text-accent uppercase tracking-widest">Reporte Inteligente Generado</p>
-        </div>
+        <p className="text-secondary font-bold text-base leading-snug mb-8 opacity-85">
+          Marta te ayuda a mejorar lo que quieres pedir o aclarar antes de continuar.
+        </p>
 
         <div className="space-y-6">
-          <section className="bg-primary text-white p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-4 opacity-5">
-               <Info className="w-32 h-32" />
-             </div>
-             <h3 className="text-sm font-black uppercase tracking-widest mb-4 opacity-70">Lectura H-Operia Intelligence</h3>
-             <p className="text-xl font-black leading-tight tracking-tight mb-4">
-               {analysisResult.analysis}
-             </p>
-             <div className="bg-white/10 p-4 rounded-2xl border border-white/10 italic text-[13px] font-bold">
-               "{analysisResult.recommendation}"
-             </div>
+          <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-4 py-2 rounded-full mb-5">Refinamiento práctico</span>
+            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Observaciones útiles</h3>
+            <p className="text-[15px] font-bold text-secondary leading-snug mb-5">
+              {analysisResult.summary}
+            </p>
+            <div className="space-y-3">
+              {analysisResult.observations.map((point: string) => (
+                <div key={point} className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                  <p className="text-[13px] font-black text-primary leading-snug">{point}</p>
+                </div>
+              ))}
+            </div>
           </section>
 
-          <div className="space-y-4">
-            <h4 className="text-[11px] font-black text-primary uppercase tracking-widest px-2">Opciones y Alternativas Planteadas</h4>
-            {analysisResult.options.map((opt: any, i: number) => (
-              <div key={i} className="bg-white p-6 rounded-[2rem] border border-accent/10 shadow-sm">
-                <h5 className="text-[15px] font-black text-primary mb-1 uppercase tracking-tight">{opt.title}</h5>
-                <p className="text-[13px] font-medium text-secondary/80 leading-snug">{opt.detail}</p>
+          <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-4 py-2 rounded-full mb-5">Preguntas que pueden aclararse</span>
+            <div className="space-y-3">
+              {analysisResult.prompts.map((item: string) => (
+                <p key={item} className="text-[14px] font-bold text-secondary leading-snug flex gap-3">
+                  <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" /> {item}
+                </p>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-4 py-2 rounded-full mb-5">Redacta tu versión final</span>
+            <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
+              Ajusta el texto para que el asesor reciba tus comentarios de forma clara. Marta ayuda a ordenar, no a aprobar ni prometer viabilidad.
+            </p>
+            <textarea
+              value={finalComments}
+              onChange={(event) => {
+                setFinalComments(event.target.value);
+                setFinalCommentsSubmitted(false);
+              }}
+              className="w-full min-h-[180px] p-5 rounded-2xl border-2 border-primary/10 focus:border-accent outline-none text-[15px] font-bold text-secondary leading-snug resize-none"
+              placeholder="Escribe aquí la versión final de tus comentarios..."
+            />
+            <button
+              onClick={submitFinalComments}
+              disabled={!finalComments.trim()}
+              className="w-full mt-5 py-5 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
+            >
+              Enviar comentarios finales al expediente
+            </button>
+            {finalCommentsSubmitted && (
+              <div className="mt-5 p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                <p className="text-[13px] font-black text-accent text-center leading-snug">
+                  Recibimos tus comentarios finales. Quedarán incorporados a tu expediente para que el asesor y el equipo comercial puedan revisarlos antes del seguimiento.
+                </p>
               </div>
-            ))}
-          </div>
+            )}
+          </section>
 
-          <div className="bg-[#f7f2eb] p-6 rounded-[2rem] border border-[#e8dfd1]">
-             <h4 className="text-[11px] font-black text-primary uppercase tracking-widest mb-4">Próximos Pasos de Gestión</h4>
-             <div className="space-y-3">
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3 text-accent" />
-                  </div>
-                  <p className="text-[12px] font-bold text-primary">Sincronización automática con el CRM para seguimiento.</p>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3 text-accent" />
-                  </div>
-                  <p className="text-[12px] font-bold text-primary">
-                    {analysisResult.email ? `Copia de este reporte enviada a ${analysisResult.email}.` : 'No se registró un correo adicional en este paso.'}
-                  </p>
-                </div>
-                {analysisResult.email && (
-                  <div className="flex gap-3">
-                    <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                      <Check className="w-3 h-3 text-accent" />
-                    </div>
-                    <p className="text-[12px] font-bold text-primary">Se ha enviado un registro de tus comentarios y de nuestras interacciones al correo {analysisResult.email}.</p>
-                  </div>
-                )}
-             </div>
-          </div>
+          <section className="bg-[#f7f2eb] p-6 rounded-[2rem] border border-[#e8dfd1]">
+            <h4 className="text-[11px] font-black text-primary uppercase tracking-widest mb-4">Puntos útiles para el asesor</h4>
+            <div className="space-y-2">
+              {analysisResult.advisorNotes.map((item: string) => (
+                <p key={item} className="text-[13px] font-bold text-primary/80 leading-snug">{item}</p>
+              ))}
+            </div>
+          </section>
 
-          <button 
-            onClick={() => {
-              trackPostReservationEvent('comments_analysis_completed', {
-                next_required_step: 'marta_contact',
-              });
-
-              navigateTo('acompanamiento_amena', 12);
-            }}
-            className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform mt-8"
-          >
-            CONFIRMAR Y FINALIZAR <ArrowRight className="w-6 h-6" />
-          </button>
-
-          <p className="text-[10px] font-bold text-secondary/50 text-center uppercase tracking-widest">
-            Toda tu interacción ha sido registrada con total seguridad
-          </p>
+          {finalCommentsSubmitted && (
+            <button
+              onClick={() => {
+                trackPostReservationEvent('comments_refinement_confirmed', {
+                  next_required_step: 'accompaniment_map',
+                });
+                navigateTo('acompanamiento_amena', 12);
+              }}
+              className="w-full py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-transform mt-8"
+            >
+              CONTINUAR A ACOMPAÑAMIENTO INTELIGENTE <ArrowRight className="w-6 h-6" />
+            </button>
+          )}
         </div>
       </motion.div>
     );
   };
-
   const AcompanamientoAmenaScreen = () => {
-    const [showSchedule, setShowSchedule] = useState(
-      martaScheduleDraftOpen.current || postReservationStatus.martaContactPreference === 'schedule_call'
-    );
-    const [showAccessNote, setShowAccessNote] = useState(postReservationStatus.martaContactPreference === 'whatsapp_link');
-    const [scheduleConfirmed, setScheduleConfirmed] = useState(postReservationStatus.martaContactPreference === 'schedule_call');
-    const [whatsappLinkConfirmed, setWhatsappLinkConfirmed] = useState(postReservationStatus.martaContactPreference === 'whatsapp_link');
-
-    const selectedMartaAction = postReservationStatus.martaContactPreference;
-    const canContinueMarta = selectedMartaAction === 'talk_now' || scheduleConfirmed || whatsappLinkConfirmed;
-
-    const chooseMartaAction = (preference: Exclude<MartaContactPreference, null>) => {
-      setPostReservationStatus((current) => ({ ...current, martaContactPreference: preference }));
-      trackPostReservationEvent('marta_contact_selected', {
-        marta_contact_preference: preference,
-        next_required_step: 'whatsapp_receipt_confirmation',
-      });
-    };
-
     return (
       <motion.div 
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
@@ -1947,160 +2041,491 @@ const UnitSelectionScreen = () => {
       >
         <BackButton />
         <PostReservationStepBadge current={5} />
-      <ReservationContinuityBadge />
-        <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-6 tracking-tight uppercase">
+        <ReservationContinuityBadge />
+
+        <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
           Acompañamiento Inteligente
         </h2>
-        <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-80">
-          Tu reserva ha sido registrada correctamente. Elige cómo deseas hablar con Marta para continuar el acompañamiento obligatorio de tu pre reserva.
+        <p className="text-secondary font-black text-[22px] leading-tight mb-3">
+          ¿Cómo prefieres continuar tu proceso?
         </p>
-
-        <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm mb-8">
-          <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-4 py-2 rounded-full mb-5">Acceso privado de acompañamiento</span>
-          <h3 className="text-[26px] font-black text-primary leading-none mb-4 uppercase">
-            Avanza con claridad, a tu ritmo
-          </h3>
-          <p className="text-[15px] font-bold text-secondary/80 leading-snug mb-5">
-            Marta puede atenderte por texto o voz desde el espacio privado de Acompañamiento Inteligente, preparar una llamada o generar un link privado por WhatsApp.
-          </p>
-          <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
-            <p className="text-[12px] font-bold text-primary/70 leading-snug">
-              Para acceder se utilizará el ID de tu reserva <span className="font-black text-primary">{reservationId}</span> y verificación de identidad antes de compartir información sensible.
-            </p>
-          </div>
-        </section>
+        <p className="text-[14px] font-bold text-secondary/70 leading-snug mb-8">
+          Puedes elegir una o varias opciones. Siempre podrás regresar a este mapa para continuar por otra vía.
+        </p>
 
         <div className="space-y-6">
           <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
-            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 01</span>
-            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Hablar ahora con Marta</h3>
-            <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-              Ingresa inmediatamente a tu espacio privado de Acompañamiento Inteligente para conversar con Marta por texto o voz.
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Ruta digital asistida</span>
+            <h3 className="text-[24px] font-black text-primary leading-none mb-3 uppercase">Continuar con Marta</h3>
+            <p className="text-[14px] font-bold text-secondary/75 leading-snug mb-5">
+              Marta es nuestra asistente virtual basada en inteligencia artificial. Es un único agente multicanal: texto, voz y futuro espacio web privado alimentan el mismo expediente.
             </p>
-            <button 
-              onClick={() => {
-                martaScheduleDraftOpen.current = false;
-                setShowSchedule(false);
-                setShowAccessNote(false);
-                setScheduleConfirmed(false);
-                setWhatsappLinkConfirmed(false);
-                chooseMartaAction('talk_now');
-                (window as any).conectarVapi?.();
-              }}
-              className="px-6 py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform"
-            >
-              Hablar ahora con Marta
-            </button>
-          </section>
-
-          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
-            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 02</span>
-            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Agendar llamada con Marta</h3>
-            <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-              Si prefieres no conversar en este momento, podrás programar un horario más cómodo para continuar tu acompañamiento posteriormente.
-            </p>
-            <button 
-              onClick={() => {
-                martaScheduleDraftOpen.current = true;
-                setShowSchedule(true);
-                setShowAccessNote(false);
-                setScheduleConfirmed(false);
-                setWhatsappLinkConfirmed(false);
-                setPostReservationStatus((current) => (
-                  current.martaContactPreference === null
-                    ? current
-                    : { ...current, martaContactPreference: null }
-                ));
-              }}
-              className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
-            >
-              Agendar llamada
-            </button>
-            <p className="text-[12px] font-bold text-secondary/60 leading-snug mt-4">
-              Recibirás la llamada de Marta en el número y horario que prefieras.
-            </p>
-
-            {showSchedule && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-4 pt-6 border-t border-primary/10">
-                <h4 className="text-[13px] font-black text-primary uppercase tracking-widest">Formulario de llamada</h4>
-                <div>
-                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Día preferido</label>
-                  <input type="date" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Hora preferida</label>
-                  <input type="time" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Número de teléfono móvil</label>
-                  <input type="text" placeholder="7060-0000" className="w-full p-4 rounded-2xl border border-primary/10 outline-none font-bold text-primary" />
-                </div>
-                <button 
-                  onClick={() => {
-                    martaScheduleDraftOpen.current = true;
-                    setScheduleConfirmed(true);
-                    setWhatsappLinkConfirmed(false);
-                    setShowAccessNote(false);
-                    chooseMartaAction('schedule_call');
-                  }}
-                  className="w-full py-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest"
-                >
-                  Confirmar llamada
-                </button>
-                {scheduleConfirmed && (
-                  <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
-                    <p className="text-[13px] font-bold text-accent text-center leading-snug">
-                      Tu solicitud de llamada con Marta quedó preparada. Puedes continuar al siguiente paso.
-                    </p>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </section>
-
-          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
-            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opción 03</span>
-            <h3 className="text-[22px] font-black text-primary leading-tight mb-4">Recibir link por WhatsApp</h3>
-            <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-              Te enviaremos un link privado por WhatsApp para hablar con Marta más adelante o iniciar contacto posteriormente.
-            </p>
-            <button 
-              onClick={() => {
-                martaScheduleDraftOpen.current = false;
-                setShowAccessNote(true);
-                setShowSchedule(false);
-                setScheduleConfirmed(false);
-                setWhatsappLinkConfirmed(true);
-                chooseMartaAction('whatsapp_link');
-              }}
-              className="px-6 py-4 rounded-2xl bg-accent/10 text-accent font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
-            >
-              Solicitar link
-            </button>
-          </section>
-
-          {showAccessNote && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-accent/5 rounded-[2rem] border border-accent/10">
-              <p className="text-[13px] font-bold text-accent text-center leading-snug">
-                Se preparó el envío del link privado por WhatsApp asociado a tu ID de reserva. Podrás hablar con Marta más adelante con verificación de identidad.
+            <div className="space-y-3">
+              <button onClick={() => navigateTo('marta_now_detail', 12)} className="w-full p-5 rounded-2xl bg-primary text-white text-left font-black text-sm uppercase tracking-widest shadow-lg active:scale-[0.98] transition-transform">
+                Conversar ahora con Marta
+              </button>
+              <button onClick={() => navigateTo('marta_schedule_detail', 12)} className="w-full p-5 rounded-2xl bg-accent/10 text-accent text-left font-black text-sm uppercase tracking-widest active:scale-[0.98] transition-transform">
+                Agendar una llamada con Marta
+              </button>
+              <button onClick={() => navigateTo('marta_link_detail', 12)} className="w-full p-5 rounded-2xl bg-accent/10 text-accent text-left font-black text-sm uppercase tracking-widest active:scale-[0.98] transition-transform">
+                Solicitar enlace para conversar con Marta después
+              </button>
+              <p className="text-[12px] font-bold text-secondary/65 leading-snug px-1">
+                El enlace permanente al futuro espacio web de Marta formará parte del WhatsApp consolidado al finalizar el recorrido de acompañamiento.
               </p>
-            </motion.div>
-          )}
+            </div>
+          </section>
+
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Ruta con equipo humano</span>
+            <h3 className="text-[24px] font-black text-primary leading-none mb-3 uppercase">Continuar con un asesor</h3>
+            <p className="text-[14px] font-bold text-secondary/75 leading-snug mb-5">
+              Si prefieres atención humana, puedes continuar con el equipo comercial. Estas opciones preparan el siguiente contacto sin redirigirte automáticamente a oficina de ventas.
+            </p>
+            <div className="space-y-3">
+              <button onClick={() => navigateTo('advisor_call_detail', 12)} className="w-full p-5 rounded-2xl bg-accent/10 text-accent text-left font-black text-sm uppercase tracking-widest active:scale-[0.98] transition-transform">
+                Solicitar llamada con un asesor
+              </button>
+              <button onClick={() => navigateTo('advisor_office_detail', 12)} className="w-full p-5 rounded-2xl bg-accent/10 text-accent text-left font-black text-sm uppercase tracking-widest active:scale-[0.98] transition-transform">
+                Agendar visita a oficinas de ventas
+              </button>
+              <button onClick={() => navigateTo('advisor_visit_detail', 12)} className="w-full p-5 rounded-2xl bg-accent/10 text-accent text-left font-black text-sm uppercase tracking-widest active:scale-[0.98] transition-transform">
+                Agendar visita acompañada al proyecto
+              </button>
+            </div>
+          </section>
+
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Continuidad del proceso</span>
+            <p className="text-[13px] font-bold text-secondary/75 leading-snug">
+No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje consolidado llegará al final del recorrido, con resumen, próximos pasos y enlace permanente a Marta.
+            </p>
+          </section>
         </div>
 
-        <button 
-          onClick={() => {
-            if (!canContinueMarta) return;
-            navigateTo('whatsapp_confirmation', 12);
-          }}
-          disabled={!canContinueMarta}
-          className="w-full mt-10 py-8 rounded-[2.5rem] bg-accent text-white font-black uppercase text-lg tracking-widest shadow-xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
+        <button
+          onClick={() => navigateTo('accompaniment_summary', 13)}
+          className="w-full py-6 mt-8 rounded-2xl bg-accent text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
         >
-          CONTINUAR <ArrowRight className="w-6 h-6" />
+          Revisar resumen de acompañamiento
         </button>
       </motion.div>
     );
   };
+
+  type AccompanimentDetailConfig = {
+    eyebrow: string;
+    title: string;
+    body: string;
+    actionLabel: string;
+    onAction: (schedule?: { date: string; time: string }) => void;
+    mode?: 'instant' | 'calendar';
+    highlights?: string[];
+    note?: string;
+    confirmationMessage?: string;
+  };
+
+  const AccompanimentDetailScreen = ({ config }: { config: AccompanimentDetailConfig }) => {
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [scheduleDate, setScheduleDate] = useState('');
+    const [scheduleTime, setScheduleTime] = useState('');
+    const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
+    const requiresCalendar = config.mode === 'calendar';
+    const canConfirmCalendar = !requiresCalendar || (scheduleDate && scheduleTime);
+
+    const handlePrimaryAction = () => {
+      if (requiresCalendar && !showCalendar) {
+        setShowCalendar(true);
+        setConfirmationMessage(null);
+        return;
+      }
+
+      if (!canConfirmCalendar) return;
+
+      config.onAction(requiresCalendar ? { date: scheduleDate, time: scheduleTime } : undefined);
+      setConfirmationMessage(config.confirmationMessage ?? 'Recibimos tu preferencia para seguimiento posterior.');
+    };
+
+    return (
+      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 pb-32">
+        <BackButton />
+        <PostReservationStepBadge current={5} />
+        <ReservationContinuityBadge />
+
+        <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm mb-6">
+          <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-4 py-2 rounded-full mb-5">{config.eyebrow}</span>
+          <h2 className="text-[30px] font-black text-accent leading-[1.05] mb-5 tracking-tight uppercase">{config.title}</h2>
+          <p className="text-[15px] font-bold text-secondary leading-snug mb-5">{config.body}</p>
+
+          {config.highlights && (
+            <div className="space-y-3 mb-6">
+              {config.highlights.map((highlight) => (
+                <div key={highlight} className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                  <p className="text-[13px] font-black text-primary leading-snug">{highlight}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {config.note && (
+            <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10 mb-6">
+              <p className="text-[12px] font-black text-accent leading-snug">{config.note}</p>
+            </div>
+          )}
+
+          {showCalendar && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 mb-6 pt-5 border-t border-primary/10">
+              <div>
+                <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Día preferido</label>
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={(event) => setScheduleDate(event.target.value)}
+                  className="w-full p-4 rounded-2xl border-2 border-primary/10 focus:border-accent outline-none font-bold text-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Hora preferida</label>
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  onChange={(event) => setScheduleTime(event.target.value)}
+                  className="w-full p-4 rounded-2xl border-2 border-primary/10 focus:border-accent outline-none font-bold text-primary"
+                />
+              </div>
+            </motion.div>
+          )}
+
+          <button
+            onClick={handlePrimaryAction}
+            disabled={showCalendar && !canConfirmCalendar}
+            className="w-full py-5 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
+          >
+            {showCalendar ? 'Confirmar preferencia' : config.actionLabel}
+          </button>
+
+          {confirmationMessage && (
+            <div className="mt-5 p-4 rounded-2xl bg-accent/5 border border-accent/10">
+              <p className="text-[13px] font-black text-accent text-center leading-snug">{confirmationMessage}</p>
+            </div>
+          )}
+        </section>
+
+        <button onClick={() => navigateTo('acompanamiento_amena', 12)} className="w-full py-5 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform">
+          Volver al mapa
+        </button>
+      </motion.div>
+    );
+  };
+
+  const MartaNowDetailScreen = () => (
+    <AccompanimentDetailScreen
+      config={{
+        eyebrow: 'Marta · texto o voz',
+        title: 'Conversar ahora con Marta',
+        body: 'Marta te ayuda a ordenar lo importante antes del seguimiento humano.',
+        highlights: [
+          'Recoge tus dudas, intereses y requerimientos.',
+          'Todo se incorpora al expediente único del cliente.',
+          'El asesor asignado y el equipo comercial podrán retomarlo después, sin que repitas información.',
+        ],
+        note: 'Marta no vende, no negocia, no promete resultados y no asume compromisos.',
+        actionLabel: 'Iniciar conversación con Marta',
+        onAction: () => {
+          martaScheduleDraftOpen.current = false;
+          setPostReservationStatus((current) => ({ ...current, martaContactPreference: 'talk_now' }));
+          trackPostReservationEvent('marta_contact_selected', {
+            marta_contact_preference: 'talk_now',
+            next_required_step: 'accompaniment_map',
+          });
+          registerAccompanimentSelection({
+            route: 'marta',
+            label: 'Conversar ahora con Marta',
+            detail: 'Preferencia registrada para conversación inmediata con Marta.',
+          });
+          (window as any).conectarVapi?.();
+        },
+      }}
+    />
+  );
+
+  const MartaScheduleDetailScreen = () => (
+    <AccompanimentDetailScreen
+      config={{
+        eyebrow: 'Marta · llamada programada',
+        title: 'Agendar una llamada con Marta',
+        body: 'Elige un día y hora preferidos para continuar con Marta por llamada.',
+        note: 'Usaremos los datos registrados durante tu reserva. No pediremos correo, teléfono ni WhatsApp nuevamente.',
+        actionLabel: 'Agendar llamada',
+        mode: 'calendar',
+        confirmationMessage: 'Recibimos tu preferencia de día y hora. La usaremos para seguimiento posterior dentro del mismo expediente.',
+        onAction: (schedule) => {
+          martaScheduleDraftOpen.current = true;
+          registerAccompanimentSelection({
+            route: 'marta',
+            label: 'Agendar una llamada con Marta',
+            detail: formatScheduleDetail(schedule),
+          });
+          setPostReservationStatus((current) => ({ ...current, martaContactPreference: 'schedule_call' }));
+          trackPostReservationEvent('marta_contact_selected', {
+            marta_contact_preference: 'schedule_call',
+            next_required_step: 'accompaniment_map',
+          });
+        },
+      }}
+    />
+  );
+
+  const MartaLinkDetailScreen = () => (
+    <AccompanimentDetailScreen
+      config={{
+        eyebrow: 'Marta · enlace permanente',
+        title: 'Solicitar enlace para después',
+        body: 'El enlace te permitirá retomar posteriormente tu espacio privado con Marta.',
+        note: 'No es una confirmación parcial de WhatsApp. El recorrido mantiene un solo expediente y el mensaje consolidado llegará al final.',
+        actionLabel: 'Enviar enlace a mi WhatsApp',
+        confirmationMessage: 'Recibimos la solicitud del enlace. Se integrará al WhatsApp consolidado del recorrido.',
+        onAction: () => {
+          registerAccompanimentSelection({
+            route: 'marta',
+            label: 'Solicitar enlace para conversar con Marta después',
+            detail: 'El enlace permanente a Marta se integrará al mensaje final del recorrido.',
+          });
+          setPostReservationStatus((current) => ({ ...current, martaContactPreference: 'whatsapp_link' }));
+          trackPostReservationEvent('marta_contact_selected', {
+            marta_contact_preference: 'whatsapp_link',
+            next_required_step: 'accompaniment_map',
+          });
+        },
+      }}
+    />
+  );
+
+  const AdvisorCallDetailScreen = () => (
+    <AccompanimentDetailScreen
+      config={{
+        eyebrow: 'Asesor · llamada',
+        title: 'Solicitar llamada con un asesor',
+        body: 'Elige el día y hora en que prefieres recibir una llamada del asesor.',
+        note: 'Después llegará el WhatsApp consolidado del recorrido con resumen y próximos pasos.',
+        actionLabel: 'Solicitar llamada',
+        mode: 'calendar',
+        confirmationMessage: 'Recibimos tu preferencia de día y hora. La trasladaremos a un asesor para que pueda contactarte posteriormente.',
+        onAction: (schedule) => {
+          registerAccompanimentSelection({
+            route: 'advisor',
+            label: 'Solicitar llamada con un asesor',
+            detail: formatScheduleDetail(schedule),
+          });
+          trackPostReservationEvent('human_advisor_option_selected', {
+            advisor_contact_preference: 'advisor_call',
+            next_required_step: 'accompaniment_map',
+          });
+        },
+      }}
+    />
+  );
+
+  const AdvisorOfficeDetailScreen = () => (
+    <AccompanimentDetailScreen
+      config={{
+        eyebrow: 'Asesor · oficinas de ventas',
+        title: 'Agendar visita a oficinas de ventas',
+        body: 'Elige un día y hora preferidos para visitar las oficinas de ventas.',
+        note: 'La preferencia será trasladada al equipo comercial. No abriremos una ruta automática fuera del mapa.',
+        actionLabel: 'Agendar visita',
+        mode: 'calendar',
+        confirmationMessage: 'Recibimos tu preferencia de visita. La trasladaremos al equipo comercial para seguimiento posterior.',
+        onAction: (schedule) => {
+          registerAccompanimentSelection({
+            route: 'advisor',
+            label: 'Agendar visita a oficinas de ventas',
+            detail: formatScheduleDetail(schedule),
+          });
+          trackPostReservationEvent('human_advisor_option_selected', {
+            advisor_contact_preference: 'sales_office_visit',
+            next_required_step: 'accompaniment_map',
+          });
+        },
+      }}
+    />
+  );
+
+  const AdvisorVisitDetailScreen = () => (
+    <AccompanimentDetailScreen
+      config={{
+        eyebrow: 'Asesor · visita al proyecto',
+        title: 'Agendar visita acompañada al proyecto',
+        body: 'Elige un día y hora preferidos para conocer el proyecto con acompañamiento del equipo.',
+        note: 'La preferencia será trasladada al equipo comercial. El expediente se mantiene unido para seguimiento humano.',
+        actionLabel: 'Agendar visita',
+        mode: 'calendar',
+        confirmationMessage: 'Recibimos tu preferencia de visita acompañada. La trasladaremos al equipo comercial para seguimiento posterior.',
+        onAction: (schedule) => {
+          registerAccompanimentSelection({
+            route: 'advisor',
+            label: 'Agendar visita acompañada al proyecto',
+            detail: formatScheduleDetail(schedule),
+          });
+          trackPostReservationEvent('human_advisor_option_selected', {
+            advisor_contact_preference: 'project_visit',
+            next_required_step: 'accompaniment_map',
+          });
+        },
+      }}
+    />
+  );
+
+  const AccompanimentSummaryScreen = () => {
+    const martaSelections = accompanimentSelections.filter((item) => item.route === 'marta');
+    const advisorSelections = accompanimentSelections.filter((item) => item.route === 'advisor');
+    const finalComments = analysisResult?.finalComments || analysisResult?.draft || 'No se agregaron comentarios finales en esta etapa.';
+    const refinedRequirements = analysisResult?.observations?.length
+      ? analysisResult.observations
+      : ['El expediente conserva la información registrada durante la reserva y las preferencias elegidas en el mapa.'];
+
+    return (
+      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 pb-32">
+        <BackButton />
+        <PostReservationStepBadge current={6} />
+        <ReservationContinuityBadge />
+        <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">Resumen de tu acompañamiento</h2>
+        <p className="text-secondary font-bold text-base leading-snug mb-8 opacity-85">
+          Revisa cómo quedó preparado tu expediente antes del cierre del recorrido.
+        </p>
+
+        <div className="space-y-6">
+          <section className="bg-[#f7f2eb] p-7 rounded-[2rem] border border-[#e8dfd1] shadow-sm">
+            <span className="inline-block text-[10px] font-black text-primary uppercase tracking-widest bg-white/70 px-3 py-1 rounded-full mb-4">Reserva activa</span>
+            <div className="space-y-3">
+              {reservationSummaryItems.map((item) => (
+                <p key={item.label} className="text-[14px] font-black text-primary uppercase tracking-tight flex flex-wrap gap-x-2">
+                  <span className="opacity-60">{item.label}:</span> {item.value}
+                </p>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Expediente preparado</span>
+            <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-4">
+              El expediente mantiene un solo hilo con tu reserva, comentarios, preferencias de acompañamiento y próximos puntos de seguimiento.
+            </p>
+            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+              <p className="text-[13px] font-black text-primary leading-snug">Comentarios finales: {finalComments}</p>
+            </div>
+          </section>
+
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Solicitudes y requerimientos refinados</span>
+            <div className="space-y-3">
+              {refinedRequirements.map((item: string) => (
+                <p key={item} className="text-[13px] font-bold text-secondary leading-snug flex gap-3">
+                  <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" /> {item}
+                </p>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opciones elegidas con Marta</span>
+            <div className="space-y-3">
+              {(martaSelections.length ? martaSelections : [{ label: 'Sin opción de Marta confirmada todavía.', detail: 'Puedes volver al mapa si deseas elegir una ruta con Marta.' }]).map((item) => (
+                <div key={item.label} className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                  <p className="text-[13px] font-black text-primary leading-snug">{item.label}</p>
+                  {item.detail && <p className="text-[12px] font-bold text-secondary/70 leading-snug mt-1">{item.detail}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Opciones elegidas con asesor</span>
+            <div className="space-y-3">
+              {(advisorSelections.length ? advisorSelections : [{ label: 'Sin opción de asesor confirmada todavía.', detail: 'Puedes volver al mapa si deseas solicitar acompañamiento humano específico.' }]).map((item) => (
+                <div key={item.label} className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                  <p className="text-[13px] font-black text-primary leading-snug">{item.label}</p>
+                  {item.detail && <p className="text-[12px] font-bold text-secondary/70 leading-snug mt-1">{item.detail}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">El mensaje que recibirás</span>
+            <p className="text-[14px] font-bold text-secondary/80 leading-snug">
+              Recibirás un único mensaje con el resumen de tu reserva, los comentarios incorporados al expediente, tus preferencias de acompañamiento, próximos pasos y el enlace permanente a Marta.
+            </p>
+          </section>
+
+          <section className="bg-white p-7 rounded-[2rem] border border-accent/10 shadow-sm">
+            <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">¿Qué ocurrirá a partir de ahora?</span>
+            <p className="text-[14px] font-bold text-secondary/80 leading-snug">
+              Tu expediente quedó preparado para revisión humana. Un asesor revisará la información y, cuando la integración correspondiente esté disponible, recibirás un único mensaje con el resumen del recorrido y los próximos pasos.
+            </p>
+          </section>
+        </div>
+
+        <button
+          onClick={() => navigateTo('official_closure', 14)}
+          className="w-full py-6 mt-8 rounded-2xl bg-accent text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
+        >
+          Confirmar resumen y continuar al cierre
+        </button>
+      </motion.div>
+    );
+  };
+
+  const OfficialClosureScreen = () => (
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, x: -20 }} className="p-8 pb-32">
+      <PostReservationStepBadge current={7} />
+      <ReservationContinuityBadge />
+      <h2 className="text-[40px] font-black text-accent leading-none mb-6 tracking-tight uppercase">Tu expediente está listo</h2>
+      <p className="text-secondary font-bold text-lg leading-snug mb-8 opacity-85">
+        Gracias por completar este recorrido. Dejamos preparado un expediente único para que el asesor humano y el equipo comercial puedan darle seguimiento con más contexto.
+      </p>
+
+      <div className="space-y-6">
+        <section className="bg-white p-8 rounded-[2rem] border border-accent/10 shadow-sm">
+          <h3 className="text-xl font-black text-primary uppercase tracking-tight mb-4">Seguimiento humano</h3>
+          <p className="text-[14px] font-bold text-secondary/80 leading-snug">
+            El asesor revisará tu reserva, tus comentarios finales, las preferencias registradas y los requerimientos refinados antes del siguiente contacto.
+          </p>
+        </section>
+
+        <section className="bg-white p-8 rounded-[2rem] border border-accent/10 shadow-sm">
+          <h3 className="text-xl font-black text-primary uppercase tracking-tight mb-4">Apoyo interno de H-OperIA Intelligence</h3>
+          <p className="text-[14px] font-bold text-secondary/80 leading-snug">
+            H-OperIA Intelligence puede apoyar internamente la organización de señales, prioridades y contexto. La decisión y el seguimiento corresponden al equipo humano.
+          </p>
+        </section>
+
+        <section className="bg-[#f7f2eb] p-8 rounded-[2rem] border border-[#e8dfd1] shadow-sm">
+          <h3 className="text-xl font-black text-primary uppercase tracking-tight mb-4">Mensaje final</h3>
+          <p className="text-[14px] font-bold text-primary/80 leading-snug mb-3">
+            En esta versión, el frontend deja preparado el cierre del recorrido sin ejecutar un envío real de WhatsApp.
+          </p>
+          <p className="text-[14px] font-bold text-primary/80 leading-snug">
+            Cuando la integración correspondiente esté activa, se enviará automáticamente un único mensaje con el resumen, próximos pasos y enlace permanente a Marta.
+          </p>
+        </section>
+
+        <section className="bg-white p-8 rounded-[2rem] border border-accent/10 shadow-sm">
+          <h3 className="text-xl font-black text-primary uppercase tracking-tight mb-4">Marta seguirá disponible</h3>
+          <p className="text-[14px] font-bold text-secondary/80 leading-snug">
+            Marta es un único agente multicanal. El enlace permanente formará parte del mensaje final para que puedas retomar tu espacio privado sin cambiar el expediente.
+          </p>
+        </section>
+      </div>
+
+      <button
+        onClick={handleLogout}
+        className="w-full py-6 mt-10 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
+      >
+        Finalizar recorrido
+      </button>
+    </motion.div>
+  );
 
   const WhatsAppConfirmationScreen = () => {
     const [hasReceivedWhatsApp, setHasReceivedWhatsApp] = useState(postReservationStatus.whatsappReceiptConfirmed);
@@ -2528,6 +2953,14 @@ const UnitSelectionScreen = () => {
           {screen === 'reservation_form' && <ReservationFormScreen key="reservation" />}
           {screen === 'further_steps' && <FurtherStepsScreen key="further" />}
           {screen === 'acompanamiento_amena' && <AcompanamientoAmenaScreen key="acompanamiento" />}
+          {screen === 'marta_now_detail' && <MartaNowDetailScreen key="marta-now" />}
+          {screen === 'marta_schedule_detail' && <MartaScheduleDetailScreen key="marta-schedule" />}
+          {screen === 'marta_link_detail' && <MartaLinkDetailScreen key="marta-link" />}
+          {screen === 'advisor_call_detail' && <AdvisorCallDetailScreen key="advisor-call" />}
+          {screen === 'advisor_office_detail' && <AdvisorOfficeDetailScreen key="advisor-office" />}
+          {screen === 'advisor_visit_detail' && <AdvisorVisitDetailScreen key="advisor-visit" />}
+          {screen === 'accompaniment_summary' && <AccompanimentSummaryScreen key="accompaniment-summary" />}
+          {screen === 'official_closure' && <OfficialClosureScreen key="official-closure" />}
           {screen === 'next_steps_instructions' && <NextStepsInstructionsScreen key="instructions" />}
           {screen === 'whatsapp_confirmation' && <WhatsAppConfirmationScreen key="whatsapp" />}
           {screen === 'office_schedule' && <OfficeScheduleScreen key="office" />}
@@ -2579,4 +3012,10 @@ imageUrl="./manzanas/Sector01Manzanas.png"
 };
 
 export default App;
+
+
+
+
+
+
 
