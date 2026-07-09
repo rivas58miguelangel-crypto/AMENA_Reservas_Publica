@@ -1,6 +1,6 @@
 {
-  "name": "AMENA - Pre Reservas 02 OK Laptop 260427h",
-  "description": "Explora los modelos de apartamentos disponibles en Torre A de AMENA Comalapa.",
+  "name": "Nova Hábitat · Distrito Norte",
+  "description": "H-OperIA Centro Demo para explorar viviendas, modelos y un recorrido de pre-reserva con datos simulados.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": []
 }

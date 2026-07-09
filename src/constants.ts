@@ -45,116 +45,116 @@ export interface Sector {
   subsectors: Subsector[];
 }
 
-const MOD_AMANECER: Model = {
-  id: 'amanecer',
-  name: 'Amanecer',
+const MOD_LUMEN: Model = {
+  id: 'lumen',
+  name: 'Lumen',
   status: 'available',
-  price: '$49,900',
-  area: '38.8 m²',
+  price: '$58,900',
+  area: '42 m²',
   bedrooms: '1 Hab',
   bathrooms: '1 Baño',
-  image: './apartamentos/1.png',
-  description: 'Unidad optimizada para el estilo de vida moderno. Cuenta con sala, cocina-comedor, área de lavado y cuarto principal.',
+  image: './demo/apartamento-plano.png',
+  description: 'Apartamento compacto con sala integrada, cocina funcional, área de lavado y dormitorio principal.',
   planImage: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1200',
   gallery: [
     'https://images.unsplash.com/photo-1626014303757-646c3109315d?auto=format&fit=crop&q=80&w=800'
   ]
 };
 
-const MOD_AMANECER_OESTE: Model = {
-  id: 'amanecer-oeste',
-  name: 'Amanecer Oeste',
+const MOD_LUMEN_OESTE: Model = {
+  id: 'lumen-oeste',
+  name: 'Lumen Oeste',
   status: 'available',
-  price: '$69,300',
-  area: '51 m²',
+  price: '$72,500',
+  area: '55 m²',
   bedrooms: '1 Hab',
   bathrooms: '1 Baño',
-  image: './apartamentos/1.png',
-  description: 'Sala espaciosa, Cocina-Comedor integrada, Área de Lavado dedicada, Cuarto Principal con ventanal, 1 Cuarto Jr, 1 Baño Compartido moderno.',
+  image: './demo/apartamento-plano.png',
+  description: 'Sala-comedor integrada, cocina abierta, área de lavado y dos dormitorios con iluminación natural.',
   planImage: 'https://images.unsplash.com/photo-1581404476143-fb31d742929f?auto=format&fit=crop&q=80&w=1200',
   gallery: []
 };
 
-const MOD_AMANECER_ESTE: Model = {
-  id: 'amanecer-este',
-  name: 'Amanecer Este',
+const MOD_LUMEN_ESTE: Model = {
+  id: 'lumen-este',
+  name: 'Lumen Este',
   status: 'available',
-  price: '$69,300',
-  area: '51 m²',
+  price: '$73,900',
+  area: '56 m²',
   bedrooms: '1 Hab',
   bathrooms: '1 Baño',
-  image: './apartamentos/2.png',
-  description: 'Sala espaciosa, Cocina-Comedor integrada, Área de Lavado dedicada, Cuarto Principal con ventanal, 1 Cuarto Jr, 1 Baño Compartido moderno.',
+  image: './demo/apartamento-plano.png',
+  description: 'Distribución abierta con sala-comedor, cocina funcional, área de lavado y dos dormitorios.',
   planImage: 'https://images.unsplash.com/photo-1543333995-a78ee9e53ac5?auto=format&fit=crop&q=80&w=1200',
   gallery: []
 };
 
-const MOD_BOREAL_OESTE: Model = {
-  id: 'boreal-oeste',
-  name: 'Boreal Oeste',
+const MOD_NEXO_OESTE: Model = {
+  id: 'nexo-oeste',
+  name: 'Nexo Oeste',
   status: 'available',
-  price: '$77,275',
-  area: '66 m²',
+  price: '$81,900',
+  area: '68 m²',
   bedrooms: '2 Hab',
   bathrooms: '1 Baño',
-  image: './apartamentos/3.png',
-  description: 'Sala de estar amplia, Comedor para 6 personas, Cocina equipada, Lavandería, Suite Principal con baño, 2 Cuartos Jr luminosos, Baño social.',
+  image: './demo/apartamento-plano.png',
+  description: 'Sala-comedor amplia, cocina equipada, lavandería y dormitorios flexibles para vida familiar.',
   planImage: 'https://images.unsplash.com/photo-1536693836173-774900130db5?auto=format&fit=crop&q=80&w=1200',
   gallery: []
 };
 
-const MOD_BOREAL_ESTE: Model = {
-  id: 'boreal-este',
-  name: 'Boreal Este',
+const MOD_NEXO_ESTE: Model = {
+  id: 'nexo-este',
+  name: 'Nexo Este',
   status: 'available',
-  price: '$77,275',
-  area: '66 m²',
+  price: '$83,500',
+  area: '69 m²',
   bedrooms: '2 Hab',
   bathrooms: '1 Baño',
-  image: './apartamentos/4.png',
-  description: 'Sala de estar amplia, Comedor para 6 personas, Cocina equipada, Lavandería, Suite Principal con baño, 2 Cuartos Jr luminosos, Baño social.',
+  image: './demo/apartamento-plano.png',
+  description: 'Sala-comedor conectada, cocina práctica, lavandería y espacios adaptables para familia o estudio.',
   planImage: 'https://images.unsplash.com/photo-1542385151-efd9000785a0?auto=format&fit=crop&q=80&w=1200',
   gallery: []
 };
 
-const MOD_CENIT: Model = {
-  id: 'cenit',
-  name: 'Cénit',
+const MOD_PRISMA: Model = {
+  id: 'prisma',
+  name: 'Prisma',
   status: 'available',
-  price: '$49,900',
-  area: '39 m²',
+  price: '$59,800',
+  area: '43 m²',
   bedrooms: '1 Hab',
   bathrooms: '1 Baño',
-  image: './apartamentos/5.png',
-  description: 'Sala, Cocina-Comedor, Área de Lavado, Cuarto Principal, 1 Baño',
+  image: './demo/apartamento-plano.png',
+  description: 'Sala-comedor, cocina compacta, área de lavado, dormitorio principal y baño.',
   planImage: 'https://images.unsplash.com/photo-1542385151-efd9000785a0?auto=format&fit=crop&q=80&w=1200',
   gallery: []
 };
 
-const MOD_DESTELLO: Model = {
-  id: 'destello',
-  name: 'Destello',
+const MOD_HORIZONTE: Model = {
+  id: 'horizonte',
+  name: 'Horizonte',
   status: 'available',
-  price: '$92,500',
-  area: '72 m²',
+  price: '$104,500',
+  area: '76 m²',
   bedrooms: '3 Hab',
   bathrooms: '2 Baños',
-  image: './apartamentos/6.png',
-  description: 'Sala-Comedor de gran escala, Cocina Gourmet, Master Suite con Walk-in Closet, 2 Habitaciones Jr, 2 Baños de lujo.',
+  image: './demo/apartamento-plano.png',
+  description: 'Sala-comedor amplia, cocina abierta, dormitorio principal y dos habitaciones complementarias.',
   planImage: 'https://images.unsplash.com/photo-1626014303757-646c3109315d?auto=format&fit=crop&q=80&w=1200',
   gallery: []
 };
 
-const MOD_NATURA: Model = {
-  id: 'natura',
-  name: 'Modelo Natura',
+const MOD_TERRA: Model = {
+  id: 'terra',
+  name: 'Modelo Terra',
   status: 'available',
-  price: '$149,900',
-  area: '85m²',
+  price: '$128,500',
+  area: '138 m²',
   bedrooms: '2 Hab',
   bathrooms: '2 Baños',
   image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000',
-  description: 'Un espacio diseñado para conectar con la naturaleza desde tu sala. Ideal para parejas jóvenes.',
+  description: 'Casa funcional con áreas sociales conectadas, jardín posterior y espacios flexibles.',
   planImage: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1000',
   gallery: [
     'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800',
@@ -162,16 +162,16 @@ const MOD_NATURA: Model = {
   ]
 };
 
-const MOD_ZEN: Model = {
-  id: 'zen',
-  name: 'Modelo Zen',
+const MOD_SERENO: Model = {
+  id: 'sereno',
+  name: 'Modelo Sereno',
   status: 'reserved',
-  price: '$165,000',
-  area: '110m²',
+  price: '$142,000',
+  area: '155 m²',
   bedrooms: '3 Hab',
   bathrooms: '2.5 Baños',
   image: 'https://images.unsplash.com/photo-1600607687960-4a2c4a7274b3?auto=format&fit=crop&q=80&w=1000',
-  description: 'Serenidad y elegancia en cada rincón de tu nuevo hogar. Amplios ventanales y luz natural.',
+  description: 'Casa familiar con ventanales amplios, área social abierta y ambientes de uso flexible.',
   planImage: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1000',
   gallery: [
     'https://images.unsplash.com/photo-1600607687960-4a2c4a7274b3?auto=format&fit=crop&q=80&w=800',
@@ -179,58 +179,58 @@ const MOD_ZEN: Model = {
   ]
 };
 
-const MOD_AURA: Model = {
-  id: 'aura',
-  name: 'Casa Aura',
+const MOD_OLIVO: Model = {
+  id: 'olivo',
+  name: 'Casa Olivo',
   status: 'available',
-  price: '$125,000',
-  area: '145 m²',
+  price: '$128,500',
+  area: '138 m²',
   bedrooms: '3 Hab',
   bathrooms: '2.5 Baños',
-  image: './casas/7.png',
-  description: 'Sala espaciosa, Cocina con isla, Comedor, Área de Lavado, Cuarto Principal con baño, 2 Cuartos Jr, Jardín posterior.',
+  image: './demo/casa-plano.png',
+  description: 'Sala-comedor integrada, cocina con isla, tres dormitorios, área de lavado y jardín posterior.',
   planImage: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1000',
   gallery: []
 };
 
-const MOD_BRISA: Model = {
-  id: 'brisa',
-  name: 'Casa Brisa',
+const MOD_CEDRO: Model = {
+  id: 'cedro',
+  name: 'Casa Cedro',
   status: 'available',
-  price: '$135,000',
-  area: '160 m²',
+  price: '$142,000',
+  area: '155 m²',
   bedrooms: '3 Hab',
   bathrooms: '2.5 Baños',
-  image: './casas/8.png',
-  description: 'Diseño abierto, Sala-Comedor integrados, Cocina moderna, 3 Habitaciones amplias, Terraza techada, Patio amplio.',
+  image: './demo/casa-plano.png',
+  description: 'Diseño abierto con cocina moderna, tres dormitorios, terraza cubierta y patio familiar.',
   planImage: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1000',
   gallery: []
 };
 
-const MOD_BRUMA: Model = {
-  id: 'bruma',
-  name: 'Casa Bruma',
+const MOD_ROBLE: Model = {
+  id: 'roble',
+  name: 'Casa Roble',
   status: 'available',
-  price: '$115,000',
-  area: '130 m²',
+  price: '$119,500',
+  area: '126 m²',
   bedrooms: '3 Hab',
   bathrooms: '2 Baños',
-  image: './casas/9.png',
-  description: 'Eficiencia y confort, Sala acogedora, Comedor funcional, Cocina equipada, 3 Habitaciones, Área de lavado exterior.',
+  image: './demo/casa-plano.png',
+  description: 'Distribución eficiente con sala acogedora, cocina equipada, tres dormitorios y área de servicio.',
   planImage: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1000',
   gallery: []
 };
 
-const MOD_CALMA: Model = {
-  id: 'calma',
-  name: 'Casa Calma',
+const MOD_JACARANDA: Model = {
+  id: 'jacaranda',
+  name: 'Casa Jacaranda',
   status: 'available',
-  price: '$145,000',
-  area: '175 m²',
+  price: '$156,000',
+  area: '182 m²',
   bedrooms: '4 Hab',
   bathrooms: '3 Baños',
-  image: './casas/10.png',
-  description: 'Espacios generosos para toda la familia, Sala familiar adicional, 4 Habitaciones, Cochera techada, Jardín perimetral.',
+  image: './demo/casa-plano.png',
+  description: 'Espacios amplios, sala familiar adicional, cuatro dormitorios, cochera cubierta y jardín.',
   planImage: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1000',
   gallery: []
 };
@@ -241,13 +241,13 @@ export const SECTORS_DATA: Record<string, Sector & { masterPlanImage: string; se
     name: 'Sector Departamentos',
     description: 'Torres con vistas únicas.',
     image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000',
-    masterPlanImage: './sectores/mapa_global.png',
-    sectorMapImage: './sectores/mapa_global.png',
+    masterPlanImage: './demo/vista-global.png',
+    sectorMapImage: './demo/vista-global.png',
     subsectors: [
       {
         id: 'sector01',
         name: 'Sector 01',
-        description: 'Vistas al Volcán',
+        description: 'Entorno urbano y áreas verdes',
         image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800',
         visualSelectionImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1500',
         visualTargets: [
@@ -256,9 +256,9 @@ export const SECTORS_DATA: Record<string, Sector & { masterPlanImage: string; se
           { id: 'T3', label: 'T3', x: 75, y: 45 },
         ],
         levels: [
-          { id: 'piso01', name: 'Nivel 01', models: [MOD_CENIT, MOD_AMANECER_OESTE, MOD_AMANECER_ESTE, MOD_BOREAL_OESTE, MOD_BOREAL_ESTE, MOD_DESTELLO], visualImage: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000', unitTargets: [{ id: '101', label: '101', x: 20, y: 50 }, { id: '102', label: '102', x: 40, y: 50 }, { id: '103', label: '103', x: 60, y: 50 }, { id: '104', label: '104', x: 80, y: 50 }] },
-          { id: 'piso02', name: 'Nivel 02', models: [MOD_CENIT, MOD_AMANECER_OESTE, MOD_AMANECER_ESTE, MOD_BOREAL_OESTE, MOD_BOREAL_ESTE, MOD_DESTELLO], visualImage: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000', unitTargets: [{ id: '201', label: '201', x: 30, y: 50 }, { id: '202', label: '202', x: 70, y: 50 }] },
-          { id: 'piso03', name: 'Nivel 03', models: [MOD_CENIT, MOD_AMANECER_OESTE, MOD_AMANECER_ESTE, MOD_BOREAL_OESTE, MOD_BOREAL_ESTE, MOD_DESTELLO], visualImage: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000' },
+          { id: 'piso01', name: 'Nivel 01', models: [MOD_PRISMA, MOD_LUMEN_OESTE, MOD_LUMEN_ESTE, MOD_NEXO_OESTE, MOD_NEXO_ESTE, MOD_HORIZONTE], visualImage: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000', unitTargets: [{ id: '101', label: '101', x: 20, y: 50 }, { id: '102', label: '102', x: 40, y: 50 }, { id: '103', label: '103', x: 60, y: 50 }, { id: '104', label: '104', x: 80, y: 50 }] },
+          { id: 'piso02', name: 'Nivel 02', models: [MOD_PRISMA, MOD_LUMEN_OESTE, MOD_LUMEN_ESTE, MOD_NEXO_OESTE, MOD_NEXO_ESTE, MOD_HORIZONTE], visualImage: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000', unitTargets: [{ id: '201', label: '201', x: 30, y: 50 }, { id: '202', label: '202', x: 70, y: 50 }] },
+          { id: 'piso03', name: 'Nivel 03', models: [MOD_PRISMA, MOD_LUMEN_OESTE, MOD_LUMEN_ESTE, MOD_NEXO_OESTE, MOD_NEXO_ESTE, MOD_HORIZONTE], visualImage: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000' },
         ]
       },
       {
@@ -272,7 +272,7 @@ export const SECTORS_DATA: Record<string, Sector & { masterPlanImage: string; se
           { id: 'T5', label: 'T5', x: 70, y: 50 },
         ],
         levels: [
-          { id: 'piso01', name: 'Nivel 01', models: [MOD_CENIT, MOD_AMANECER_OESTE, MOD_AMANECER_ESTE, MOD_BOREAL_OESTE, MOD_BOREAL_ESTE, MOD_DESTELLO], visualImage: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000', unitTargets: [{ id: '101', label: '101', x: 50, y: 50 }] },
+          { id: 'piso01', name: 'Nivel 01', models: [MOD_PRISMA, MOD_LUMEN_OESTE, MOD_LUMEN_ESTE, MOD_NEXO_OESTE, MOD_NEXO_ESTE, MOD_HORIZONTE], visualImage: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000', unitTargets: [{ id: '101', label: '101', x: 50, y: 50 }] },
         ]
       }
     ]
@@ -282,16 +282,16 @@ export const SECTORS_DATA: Record<string, Sector & { masterPlanImage: string; se
     name: 'Sector Casas',
     description: 'Residencias con jardín.',
     image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&q=80&w=1000',
-    masterPlanImage: './sectores/mapa_global.png',
-    sectorMapImage: './sectores/mapa_global.png',
+    masterPlanImage: './demo/vista-global.png',
+    sectorMapImage: './demo/vista-global.png',
     subsectors: [
       {
         id: 'etapa1',
         name: 'Sector 01',
-        description: 'Villas del Sendero',
-        image: './casas/7.png',
+        description: 'Jardines del Norte',
+        image: './demo/casa-exterior.png',
         levels: [
-          { id: 'manzana1', name: 'Manzana 01', models: [MOD_AURA, MOD_BRISA, MOD_BRUMA, MOD_CALMA] },
+          { id: 'manzana1', name: 'Manzana 01', models: [MOD_OLIVO, MOD_CEDRO, MOD_ROBLE, MOD_JACARANDA] },
         ]
       }
     ]
@@ -312,7 +312,7 @@ export const HOUSING_TYPES = [
     id: 'casas', 
     name: 'Residencial (Casas)', 
     description: 'Privacidad y espacio para crecer.',
-    image: './casavsapto/Casa02.png',
+    image: './demo/casa-exterior.png',
     pros: ['Jardín privado para mascotas', 'Mayor Independencia acústica', 'Personalización de fachada'],
     cons: ['Mantenimiento exterior propio', 'Inversión inicial mayor'],
     features: ['Cochera para 3 vehículos', 'Área de servicio completa', 'Club privado exclusivo']
@@ -321,7 +321,7 @@ export const HOUSING_TYPES = [
     id: 'apartamentos', 
     name: 'Vertical (Apartamentos)', 
     description: 'Estilo de vida dinámico y seguro.',
-    image: './casavsapto/Apartamento.png',
+    image: './demo/apartamento-exterior.png',
     pros: ['Vistas impresionantes', 'Mantenimiento simplificado', 'Acceso a Amenidades Premium'],
     cons: ['Áreas externas compartidas', 'Regulaciones de convivencia'],
     features: ['Piscina infinita en Rooftop', 'Coworking space', 'Seguridad de alta tecnología']

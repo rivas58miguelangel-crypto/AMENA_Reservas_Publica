@@ -1,14 +1,14 @@
 export const projectBranding = {
-  projectName: 'AMENA',
-  companyName: 'Inmobiliaria Puntto',
-  tagline: 'COMALAPA DIGITAL',
+  projectName: 'Distrito Norte',
+  companyName: 'Nova Hábitat',
+  tagline: 'VIVE TU PRÓXIMA ETAPA',
   logoUrl: '',
   primaryColor: '#1e5d8c',
   secondaryColor: '#8b847e',
   accentColor: '#d0833b',
   backgroundColor: '#f2f2eb',
   martaName: 'Marta',
-  assistantLabel: 'Acompañamiento AMENA',
+  assistantLabel: 'Marta · Acompañamiento Distrito Norte',
 };
 
 export type ProjectBranding = typeof projectBranding;

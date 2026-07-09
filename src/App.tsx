@@ -153,7 +153,7 @@ const App: React.FC = () => {
 
   const totalSteps = 15;
   const isApartments = selectedType === 'apartamentos';
-  const reservationId = selectedUnit?.id ? `AMENA-${selectedUnit.id.toUpperCase()}` : 'AMENA-RESERVA-DEMO';
+  const reservationId = selectedUnit?.id ? `DN-${selectedUnit.id.toUpperCase()}` : 'DN-RESERVA-DEMO';
   const reservationSummaryItems = [
     { label: 'Proyecto', value: projectBranding.projectName },
     { label: isApartments ? 'Torre' : 'Manzana', value: selectedTorre?.label },
@@ -217,7 +217,7 @@ const App: React.FC = () => {
     };
 
     if (import.meta.env.DEV) {
-      console.debug('[AMENA post-reservation event pending Supabase]', postReservationEvent);
+      console.debug('[Ruta 2 post-reservation event pending Supabase]', postReservationEvent);
     }
   };
 
@@ -288,6 +288,7 @@ const App: React.FC = () => {
             <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--brand-primary)]" />
           </div>
           <div className="flex flex-col">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: projectBranding.primaryColor }}>{projectBranding.companyName}</p>
             <h1 className="text-2xl font-black tracking-tight leading-none uppercase" style={{ color: projectBranding.primaryColor }}>{projectBranding.projectName}</h1>
             <p className="text-[8px] font-black tracking-[0.3em] opacity-80 uppercase leading-none mt-1" style={{ color: projectBranding.primaryColor }}>{projectBranding.tagline}</p>
           </div>
@@ -575,12 +576,16 @@ const App: React.FC = () => {
       <h2 className="text-[28px] font-black text-primary leading-tight mb-4 tracking-tight">
         Bienvenido al visualizador digital
       </h2>
+      <p className="inline-flex rounded-full bg-accent/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-accent mb-4">
+        Demo · Datos simulados
+      </p>
       <p className="text-secondary font-medium text-sm leading-snug mb-8">
         Conoce mejor el proyecto, revisa disponibilidad y avanza hacia una pre reserva con mayor claridad.
       </p>
 
       <div className="amena-card-welcome mb-8 p-8 rounded-3xl bg-[#dbe2e5]">
-        <h3 className="text-4xl font-black text-primary mb-6 tracking-tight">Bienvenido a AMENA</h3>
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-accent mb-2">Nova Hábitat presenta</p>
+        <h3 className="text-4xl font-black text-primary mb-6 tracking-tight">Bienvenido a Distrito Norte</h3>
         <p className="text-primary font-bold text-xl leading-relaxed mb-8 opacity-90">
           Antes de iniciar el recorrido, completa tus datos para personalizar tu experiencia y registrar correctamente tu interés en el proyecto.
         </p>
@@ -615,7 +620,7 @@ const App: React.FC = () => {
           className="w-full flex items-center justify-between"
         >
           <p className="text-sm font-bold text-primary text-left pr-4">
-            Acepto los términos, condiciones y tratamiento de mis datos personales en AMENA.
+            Comprendo que esta experiencia es una demostración con datos simulados.
           </p>
           <div className={cn(
             "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
@@ -647,13 +652,13 @@ const App: React.FC = () => {
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
             >
-              <h3 className="text-2xl font-black text-primary mb-4">Condiciones de uso y tratamiento de datos</h3>
+              <h3 className="text-2xl font-black text-primary mb-4">Condiciones de uso del escenario demo</h3>
               <ul className="space-y-3 text-sm font-semibold leading-6 text-secondary">
-                <li>AMENA usará los datos ingresados únicamente para personalizar el recorrido, dar seguimiento comercial y gestionar una posible reserva.</li>
-                <li>El usuario acepta recibir comunicaciones relacionadas con el proyecto por WhatsApp, correo electrónico o llamada.</li>
-                <li>La información podrá formar parte del expediente operacional del interesado dentro del ecosistema AMENA.</li>
-                <li>AMENA se compromete a tratar los datos con confidencialidad y fines exclusivamente relacionados con el proyecto.</li>
-                <li>El usuario puede solicitar actualización o eliminación de sus datos.</li>
+                <li>Esta experiencia corresponde a un escenario demostrativo con datos simulados.</li>
+                <li>No constituye una reserva real ni una oferta comercial vinculante.</li>
+                <li>No implica tratamiento comercial definitivo por parte de una entidad inmobiliaria real.</li>
+                <li>Para la demostración deben utilizarse datos ficticios y evitar información personal sensible.</li>
+                <li>Las comunicaciones, precios y disponibilidades mostradas son únicamente referenciales.</li>
               </ul>
               <button
                 type="button"
@@ -718,20 +723,20 @@ onClick={(event) => {
       {
         type: 'image',
         title: 'Vivir en Casa',
-        url: './casa vs apto/Casa02.png',
-        price: 'Desde $115k',
-        area: '130m² - 175m²',
-        description: 'Privacidad total, Jardín propio, Espacios amplios, Cochera privada, Independencia.',
-        caption: 'Amena casa Aura - Fachada Principal'
+        url: './demo/casa-exterior.png',
+        price: 'Desde $119k',
+        area: '126m² - 182m²',
+        description: 'Jardín propio, espacios familiares, cochera y distribución independiente.',
+        caption: 'Distrito Norte · Casa Olivo'
       },
       {
         type: 'image',
         title: 'Vivir en Torre',
-        url: './casa vs apto/Apartamento.png',
-        price: 'Desde $77k',
-        area: '39m² - 72m²',
-        description: 'Vistas únicas, Amenidades premium, Rooftop pool, Coworking, Seguridad 24/7.',
-        caption: 'Amena Apartamento Cénit - Espacios Optimizados'
+        url: './demo/apartamento-exterior.png',
+        price: 'Desde $58k',
+        area: '42m² - 76m²',
+        description: 'Distribuciones funcionales, áreas compartidas y opciones para distintos estilos de vida.',
+        caption: 'Distrito Norte · Apartamento Prisma'
       }
     ];
 
@@ -774,7 +779,7 @@ onClick={(event) => {
             className="group bg-white border-2 border-transparent hover:border-primary/20 rounded-[2rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3"
           >
             <div className="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
-               <img src="./casa vs apto/Casa02.png" alt="Casas" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+               <img src="./demo/casa-exterior.png" alt="Casas" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             </div>
             <h3 className="text-[13px] font-black text-primary leading-tight uppercase tracking-tight mb-0.5">Residencial</h3>
             <p className="text-[8px] font-bold text-secondary tracking-tight opacity-70 uppercase">Casas</p>
@@ -792,7 +797,7 @@ onClick={(event) => {
             className="group bg-white border-2 border-transparent hover:border-accent/20 rounded-[2rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3"
           >
              <div className="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
-               <img src="./casa vs apto/Apartamento.png" alt="Apartamentos" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+               <img src="./demo/apartamento-exterior.png" alt="Apartamentos" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             </div>
             <h3 className="text-[13px] font-black text-accent leading-tight uppercase tracking-tight mb-0.5">Vertical</h3>
             <p className="text-[8px] font-bold text-secondary tracking-tight opacity-70 uppercase">Apartamentos</p>
@@ -1018,8 +1023,8 @@ onClick={(event) => {
                     <div className="px-2 py-0.5 bg-green-500 rounded-full text-[8px] text-white font-black uppercase">Disponibles</div>
                   </div>
                   <div className="space-y-1 opacity-70">
-                    <p className="text-[10px] font-black text-primary uppercase">{isApartments ? 'Cénit:' : 'Senda:'} {Math.floor(Math.random() * 5) + 1} disp.</p>
-                    <p className="text-[10px] font-black text-primary uppercase">{isApartments ? 'Destello:' : 'Aura:'} {Math.floor(Math.random() * 3) + 1} disp.</p>
+                    <p className="text-[10px] font-black text-primary uppercase">{isApartments ? 'Prisma:' : 'Olivo:'} {Math.floor(Math.random() * 5) + 1} disp.</p>
+                    <p className="text-[10px] font-black text-primary uppercase">{isApartments ? 'Horizonte:' : 'Cedro:'} {Math.floor(Math.random() * 3) + 1} disp.</p>
                   </div>
                 </button>
               ))}
@@ -1239,7 +1244,7 @@ const UnitSelectionScreen = () => {
       <div className="aspect-square bg-slate-100 rounded-[2.5rem] relative overflow-hidden flex items-center justify-center">
 
         <img
-          src="./lotes/casalote.png"
+          src="./demo/plano-lotes.png"
           alt="Plano Lotes"
           className="w-full h-full object-cover rounded-[2rem]"
           referrerPolicy="no-referrer"
@@ -1431,7 +1436,7 @@ const UnitSelectionScreen = () => {
           Confirma tu Interés
         </h2>
         <p className="text-secondary font-medium text-sm leading-snug mb-8">
-          Estás a un paso de separar tu lugar en AMENA. Revisa el resumen de tu selección.
+          Estás a un paso de completar tu selección demo en Distrito Norte. Revisa el resumen.
         </p>
 
         <div className="bg-[#f7f2eb] p-10 rounded-[2.5rem] border border-[#e8dfd1] mb-10 shadow-md">
@@ -1480,7 +1485,7 @@ const UnitSelectionScreen = () => {
 
         <div className="space-y-6">
           <div className="text-center mb-4">
-            <p className="text-sm font-bold text-secondary uppercase tracking-widest opacity-80 italic">Al confirmar, enviaremos esta selección a un asesor AMENA.</p>
+            <p className="text-sm font-bold text-secondary uppercase tracking-widest opacity-80 italic">Al confirmar, registraremos esta selección dentro del escenario demostrativo.</p>
           </div>
           <button 
             onClick={() => {
@@ -2548,7 +2553,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
         <section className="bg-white p-8 rounded-[2.5rem] border border-accent/10 shadow-sm mb-8">
           <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-4 py-2 rounded-full mb-5">Confirmación obligatoria</span>
           <p className="text-[15px] font-bold text-secondary/80 leading-snug mb-6">
-            El mensaje debe incluir la referencia de tu pre reserva, la unidad seleccionada y el siguiente paso de contacto con AMENA.
+            El mensaje demo debe incluir la referencia, la unidad seleccionada y el siguiente paso ilustrativo.
           </p>
           <label className="flex items-start gap-4 p-5 rounded-2xl bg-primary/5 border border-primary/10 cursor-pointer">
             <input
@@ -2692,7 +2697,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
                 {confirmedProjectVisitPreference === 'schedule_visit' && (
                   <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
                     <p className="text-[13px] font-bold text-accent text-center leading-snug">
-                      Visita tentativa registrada. El equipo de AMENA confirmará disponibilidad.
+                      Visita tentativa registrada dentro del escenario demo. La disponibilidad no es vinculante.
                     </p>
                   </div>
                 )}
@@ -2792,7 +2797,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
       </div>
 
       <p className="text-[12px] font-bold text-secondary/70 leading-tight mb-8 px-1 italic">
-        Recibirás la llamada en el número que registres. Si necesitas cambiar la fecha u hora después, podrás hacerlo escribiendo al WhatsApp de AMENA.
+        En una operación real recibirías la llamada en el número registrado. Esta demostración no confirma comunicaciones ni citas reales.
       </p>
 
       <button 
@@ -2874,7 +2879,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
         Proceso finalizado correctamente
       </h2>
       <p className="text-secondary font-bold text-lg leading-snug mb-10 opacity-80">
-        Tu información ha sido registrada exitosamente. Gracias por avanzar en este recorrido con AMENA.
+        La información demo fue registrada correctamente. Gracias por recorrer Distrito Norte.
       </p>
 
       <div className="bg-[#f7f2eb] p-8 rounded-[2rem] border border-[#e8dfd1] mb-8 shadow-sm space-y-4">
@@ -2903,8 +2908,8 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
           {[
             'La pre reserva ha quedado registrada en el sistema.',
             'La acción comercial seleccionada ha sido registrada correctamente.',
-            'Un miembro del equipo de AMENA continuará el acompañamiento correspondiente.',
-            'Gracias por tu interés en AMENA.'
+            'El escenario muestra cómo un equipo comercial podría continuar el acompañamiento.',
+            'Gracias por explorar Nova Hábitat · Distrito Norte.'
           ].map((text, i) => (
             <li key={i} className="flex items-start gap-3 text-[13px] font-bold text-primary/80 leading-tight">
               <div className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
@@ -2979,15 +2984,15 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
   isOpen={isMasterPlanOpen}
   onClose={() => setIsMasterPlanOpen(false)}
   title="Master Plan Maestro"
-  imageUrl="./sectores/mapa_global.png"
-  message="Visualiza la distribución general del proyecto AMENA."
+  imageUrl="./demo/vista-global.png"
+  message="Visualiza la distribución referencial del proyecto demo Distrito Norte."
 />
 
 <ImageModal
   isOpen={isSectorMapOpen}
   onClose={() => setIsSectorMapOpen(false)}
-  title="Amena - Vista Global"
-  imageUrl="./sectores/mapa_global.png"
+  title="Distrito Norte · Vista Global"
+  imageUrl="./demo/vista-global.png"
   message="Todos los espacios pertenecen a un SECTOR. Vista 3D referencial."
 />
 
@@ -2995,7 +3000,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
   isOpen={isManzanasModalOpen}
   onClose={() => setIsManzanasModalOpen(false)}
   title="Manzanas disponibles"
-imageUrl="./manzanas/Sector01Manzanas.png"
+imageUrl="./demo/plano-manzanas.png"
   message="Visualiza las manzanas activas dentro del sector seleccionado."
 />
 
@@ -3003,7 +3008,7 @@ imageUrl="./manzanas/Sector01Manzanas.png"
   isOpen={isLotesModalOpen}
   onClose={() => setIsLotesModalOpen(false)}
   title="Lotes disponibles"
-  imageUrl="./lotes/casalote.png"
+  imageUrl="./demo/plano-lotes.png"
   message="Visualiza los lotes disponibles dentro de la manzana seleccionada."
 />
 
