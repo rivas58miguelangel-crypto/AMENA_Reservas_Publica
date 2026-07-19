@@ -278,27 +278,34 @@ const App: React.FC = () => {
   // --- Components ---
 
   const Header = () => (
-    <div className="p-6 text-white shadow-lg" style={{ backgroundColor: projectBranding.secondaryColor }}>
-      <div className="flex justify-between items-center mb-6">
+    <div className="hoperia-public-header">
+      <div className="hoperia-public-suite-row">
+        <div>
+          <p className="hoperia-public-kicker">Suite H - OperIA</p>
+          <p className="hoperia-public-system-copy">Experiencia pública de reservas</p>
+        </div>
+        <div className="hoperia-public-progress">
+          <span className="text-[11px] font-black text-amber-300 uppercase tracking-widest whitespace-nowrap">PASO {step} DE {totalSteps}</span>
+        </div>
+      </div>
+      <div className="hoperia-public-client-strip" style={{ borderColor: projectBranding.primaryColor }}>
         <div className="flex items-center gap-4">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--brand-primary)]" />
-            <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--brand-primary)]" />
-            <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--brand-primary)]" />
-            <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--brand-primary)]" />
+          <div className="grid grid-cols-2 gap-2" aria-hidden="true">
+            <div className="w-2.5 h-2.5 rounded-full border-2" style={{ borderColor: projectBranding.primaryColor }} />
+            <div className="w-2.5 h-2.5 rounded-full border-2" style={{ borderColor: projectBranding.primaryColor }} />
+            <div className="w-2.5 h-2.5 rounded-full border-2" style={{ borderColor: projectBranding.primaryColor }} />
+            <div className="w-2.5 h-2.5 rounded-full border-2" style={{ borderColor: projectBranding.primaryColor }} />
           </div>
           <div className="flex flex-col">
+            <p className="hoperia-public-client-label">Proyecto contextual</p>
             <h1 className="text-2xl font-black tracking-tight leading-none uppercase" style={{ color: projectBranding.primaryColor }}>{projectBranding.projectName}</h1>
             <p className="text-[8px] font-black tracking-[0.3em] opacity-80 uppercase leading-none mt-1" style={{ color: projectBranding.primaryColor }}>{projectBranding.tagline}</p>
           </div>
         </div>
-        <div className="bg-white px-6 py-2 rounded-full shadow-md">
-          <span className="text-[12px] font-black text-[var(--brand-accent)] uppercase tracking-widest whitespace-nowrap">PASO {step} DE {totalSteps}</span>
-        </div>
       </div>
-      <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
-        <motion.div 
-          className="h-full rounded-full shadow-[0_0_10px_rgba(208,131,59,0.5)]" style={{ backgroundColor: projectBranding.accentColor }} 
+      <div className="hoperia-public-progress-track">
+        <motion.div
+          className="hoperia-public-progress-value"
           initial={{ width: 0 }}
           animate={{ width: `${(step / totalSteps) * 100}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
@@ -569,22 +576,29 @@ const App: React.FC = () => {
   const WelcomeScreen = () => (
     <motion.div 
       initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-      className="p-8"
+      className="hoperia-public-screen"
     >
       <BackButton />
-      <h2 className="text-[28px] font-black text-primary leading-tight mb-4 tracking-tight">
-        Bienvenido al visualizador digital
+      <div className="hoperia-public-context-panel mb-6">
+        <p className="hoperia-public-context-eyebrow">Capacidad H - OperIA aplicada a AMENA</p>
+        <p className="hoperia-public-context-copy">
+          Este recorrido convierte tu interés inicial en contexto verificable para explorar el proyecto con mayor claridad.
+        </p>
+      </div>
+      <h2 className="hoperia-public-heading">
+        Explora AMENA con contexto
       </h2>
-      <p className="text-secondary font-medium text-sm leading-snug mb-8">
-        Conoce mejor el proyecto, revisa disponibilidad y avanza hacia una pre reserva con mayor claridad.
+      <p className="hoperia-public-copy">
+        La experiencia organiza tus datos, preferencias y decisiones para acompañar una posible pre reserva dentro del ecosistema H - OperIA.
       </p>
 
-      <div className="amena-card-welcome mb-8 p-8 rounded-3xl bg-[#dbe2e5]">
-        <h3 className="text-4xl font-black text-primary mb-6 tracking-tight">Bienvenido a AMENA</h3>
-        <p className="text-primary font-bold text-xl leading-relaxed mb-8 opacity-90">
-          Antes de iniciar el recorrido, completa tus datos para personalizar tu experiencia y registrar correctamente tu interés en el proyecto.
+      <div className="hoperia-public-card mb-7">
+        <p className="hoperia-public-card-label">Construcción de contexto</p>
+        <h3 className="mb-4 text-2xl font-black tracking-normal text-slate-950">Comencemos por identificar tu recorrido</h3>
+        <p className="mb-7 text-base font-semibold leading-relaxed text-slate-700">
+          Antes de explorar opciones, necesitamos reconocer a la persona interesada y preparar una experiencia ordenada alrededor de AMENA.
         </p>
-        <div className="space-y-5 text-base text-primary">
+        <div className="space-y-4 text-base text-slate-950">
           {[
             { key: 'firstName', label: 'Nombres', placeholder: 'Ej. Miguel' },
             { key: 'lastName', label: 'Apellidos', placeholder: 'Ej. Rivas' },
@@ -592,14 +606,14 @@ const App: React.FC = () => {
             { key: 'phone', label: 'Teléfono celular con código de país', placeholder: 'Ej. +503 7000-0000', type: 'tel' },
             { key: 'dui', label: 'DUI opcional', placeholder: 'Ej. 00000000-0' },
           ].map((field) => (
-            <label key={field.key} className="block border-b border-primary/20 pb-3">
-              <span className="block font-black uppercase tracking-widest text-xs mb-2">{field.label}</span>
+            <label key={field.key} className="block">
+              <span className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">{field.label}</span>
               <input
                 type={field.type || 'text'}
                 defaultValue={interestedPerson[field.key as keyof typeof interestedPerson]}
                 onBlur={(event) => setInterestedPerson((current) => ({ ...current, [field.key]: event.target.value }))}
                 placeholder={field.placeholder}
-                className="w-full bg-white/70 rounded-2xl px-4 py-3 text-primary font-bold outline-none placeholder:text-primary/40"
+                className="hoperia-public-field font-bold"
               />
             </label>
           ))}
@@ -607,19 +621,19 @@ const App: React.FC = () => {
       </div>
 
       <div className={cn(
-        "w-full p-5 rounded-2xl border mb-8 bg-white transition-all",
-        acceptedTerms ? "border-primary" : "border-transparent shadow-sm"
+        "hoperia-public-card mb-7 w-full p-5 transition-all",
+        acceptedTerms ? "border-slate-950" : "border-slate-200"
       )}>
         <button
           onClick={() => setAcceptedTerms(!acceptedTerms)}
-          className="w-full flex items-center justify-between"
+          className="flex w-full items-center justify-between rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
         >
-          <p className="text-sm font-bold text-primary text-left pr-4">
-            Acepto los términos, condiciones y tratamiento de mis datos personales en AMENA.
+          <p className="pr-4 text-left text-sm font-bold text-slate-700">
+            Acepto que mis datos sean tratados como contexto inicial para orientar el recorrido de reserva en AMENA.
           </p>
           <div className={cn(
-            "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
-            acceptedTerms ? "bg-primary border-primary" : "border-slate-300"
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+            acceptedTerms ? "border-slate-950 bg-slate-950" : "border-slate-300 bg-slate-50"
           )}>
             {acceptedTerms && <Check className="w-4 h-4 text-white" />}
           </div>
@@ -627,7 +641,7 @@ const App: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsTermsModalOpen(true)}
-          className="mt-3 text-left text-xs font-black text-primary underline underline-offset-4"
+          className="mt-3 rounded text-left text-xs font-black text-slate-700 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
         >
           Ver condiciones de uso y tratamiento de datos
         </button>
@@ -693,11 +707,11 @@ onClick={(event) => {
   navigateTo('housing_type', 2);
 }}
         className={cn(
-          "amena-btn amena-btn-dark mb-4",
+          "hoperia-public-button-primary mb-4",
           !acceptedTerms && "opacity-50 grayscale"
         )}
       >
-        COMENZAR RECORRIDO
+        INICIAR RECORRIDO GUIADO
       </button>
 
       <div className="text-center space-y-4">
@@ -738,14 +752,20 @@ onClick={(event) => {
     return (
       <motion.div 
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-        className="p-8"
+        className="hoperia-public-screen"
       >
         <BackButton />
-        <h2 className="text-[32px] font-black text-accent leading-none mb-4 tracking-tight uppercase">
-          Tu Futuro Hogar
+        <div className="hoperia-public-context-panel mb-6">
+          <p className="hoperia-public-context-eyebrow">Primera decisión del recorrido</p>
+          <p className="hoperia-public-context-copy">
+            H - OperIA organiza las alternativas de AMENA como caminos de exploración, no como un catálogo aislado.
+          </p>
+        </div>
+        <h2 className="hoperia-public-heading uppercase">
+          Define tu camino
         </h2>
-        <p className="text-secondary font-medium text-sm mb-8 leading-snug">
-          Selecciona el formato de vivienda que mejor se adapte a tu estilo de vida.
+        <p className="hoperia-public-copy">
+          Elige el formato de vivienda que quieres analizar primero para continuar con sectores y disponibilidad.
         </p>
 
         <button 
@@ -753,11 +773,11 @@ onClick={(event) => {
             setCarouselStep(0);
             setIsComparisonOpen(true);
           }}
-          className="w-full flex justify-between items-center p-5 border border-accent/20 rounded-2xl bg-accent/5 mb-8 active:bg-accent/10 transition-colors"
+          className="hoperia-public-button-secondary mb-7 flex items-center justify-between"
         >
-          <span className="font-bold text-primary text-sm">Visualizador Comparativo</span>
-          <div className="flex items-center text-accent font-bold text-xs tracking-tight gap-1">
-            Abrir Guía <ArrowRight className="w-4 h-4 ml-1" />
+          <span className="text-sm font-bold">Comparar caminos de vivienda</span>
+          <div className="flex items-center gap-1 text-xs font-bold tracking-tight text-slate-700">
+            Revisar guía <ArrowRight className="w-4 h-4 ml-1" />
           </div>
         </button>
 
@@ -771,13 +791,14 @@ onClick={(event) => {
   });
   navigateTo('sector_selection', 3);
 }}
-            className="group bg-white border-2 border-transparent hover:border-primary/20 rounded-[2rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3"
+            className="hoperia-public-choice group items-center"
           >
-            <div className="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
+            <div className="hoperia-public-choice-media">
                <img src="./casa vs apto/Casa02.png" alt="Casas" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             </div>
-            <h3 className="text-[13px] font-black text-primary leading-tight uppercase tracking-tight mb-0.5">Residencial</h3>
-            <p className="text-[8px] font-bold text-secondary tracking-tight opacity-70 uppercase">Casas</p>
+            <p className="mb-2 text-[8px] font-black uppercase tracking-widest text-amber-600">Camino residencial</p>
+            <h3 className="mb-0.5 text-[13px] font-black leading-tight tracking-normal text-slate-950 uppercase">Residencial</h3>
+            <p className="text-[8px] font-bold tracking-normal text-slate-500 uppercase">Casas</p>
           </button>
 
           <button
@@ -789,13 +810,14 @@ onClick={(event) => {
               });
               navigateTo('sector_selection', 3);
             }}
-            className="group bg-white border-2 border-transparent hover:border-accent/20 rounded-[2rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3"
+            className="hoperia-public-choice group items-center"
           >
-             <div className="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
+             <div className="hoperia-public-choice-media">
                <img src="./casa vs apto/Apartamento.png" alt="Apartamentos" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             </div>
-            <h3 className="text-[13px] font-black text-accent leading-tight uppercase tracking-tight mb-0.5">Vertical</h3>
-            <p className="text-[8px] font-bold text-secondary tracking-tight opacity-70 uppercase">Apartamentos</p>
+            <p className="mb-2 text-[8px] font-black uppercase tracking-widest text-amber-600">Camino vertical</p>
+            <h3 className="mb-0.5 text-[13px] font-black leading-tight tracking-normal text-slate-950 uppercase">Vertical</h3>
+            <p className="text-[8px] font-bold tracking-normal text-slate-500 uppercase">Apartamentos</p>
           </button>
         </div>
 
@@ -889,34 +911,39 @@ onClick={(event) => {
   const SectorSelectionScreen = () => {
     const data = selectedType ? SECTORS_DATA[selectedType] : null;
     const isApartments = selectedType === 'apartamentos';
-    const accentColor = isApartments ? 'text-accent' : 'text-primary';
 
     return (
       <motion.div 
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-        className="p-8"
+        className="hoperia-public-screen"
       >
         <BackButton />
-        <h2 className={`text-[32px] font-black ${accentColor} leading-none mb-4 tracking-tight uppercase`}>
-          Selecciona Sector
+        <div className="hoperia-public-context-panel mb-6">
+          <p className="hoperia-public-context-eyebrow">Continuidad del recorrido</p>
+          <p className="hoperia-public-context-copy">
+            La selección de sector conecta tu camino de vivienda con la realidad disponible del proyecto AMENA.
+          </p>
+        </div>
+        <h2 className="hoperia-public-heading uppercase">
+          Ubica tu contexto
         </h2>
-        <p className="text-secondary font-medium text-sm leading-snug mb-8">
-          Elige el sector en el que deseas explorar disponibilidad de {isApartments ? 'apartamentos' : 'casas'}.
+        <p className="hoperia-public-copy">
+          Elige el sector donde quieres continuar la exploración de {isApartments ? 'apartamentos' : 'casas'}.
         </p>
 
         <button 
           onClick={() => setIsSectorMapOpen(true)}
-          className={`w-full flex justify-between items-center py-5 border-y ${isApartments ? 'border-accent/10' : 'border-primary/10'} mb-8 active:bg-black/5 px-2 transition-colors group`}
+          className="hoperia-public-button-secondary mb-7 flex items-center justify-between group"
         >
-          <span className="font-black text-primary text-lg tracking-tight">Ver sectores del proyecto</span>
-          <div className={`flex items-center ${accentColor} font-black uppercase text-[10px] tracking-widest gap-2`}>
-            Abrir <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <span className="text-lg font-black tracking-normal">Ver mapa de sectores</span>
+          <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-700 uppercase">
+            Orientar <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </button>
 
-        <div className="bg-[#f7f2eb] p-4 rounded-full border border-[#e8dfd1] mb-8">
-           <p className="text-[10px] font-black text-primary uppercase text-center tracking-tight flex items-center justify-center gap-1">
-             <span className="opacity-80">{isApartments ? 'APARTAMENTOS' : 'CASAS'}</span>
+        <div className="hoperia-public-chip">
+           <p className="flex items-center justify-center gap-1 text-center text-[10px] font-black tracking-widest text-slate-700 uppercase">
+             <span className="opacity-80">Camino activo - {isApartments ? 'APARTAMENTOS' : 'CASAS'}</span>
            </p>
         </div>
 
@@ -937,10 +964,11 @@ onClick={(event) => {
                 }
                 navigateTo('torre_selection', 4);
               }}
-              className={`group bg-white rounded-2xl p-6 text-left shadow-sm border-2 border-transparent ${isApartments ? 'active:border-accent' : 'active:border-primary'} hover:shadow-md transition-all flex flex-col items-start justify-center`}
+              className="hoperia-public-sector group"
             >
-              <h3 className={`text-xl font-black ${accentColor} mb-1 leading-none uppercase tracking-tight`}>{sub.name}</h3>
-              <p className="text-[9px] font-bold text-secondary opacity-60 leading-tight">{sub.description}</p>
+              <p className="mb-3 text-[8px] font-black uppercase tracking-widest text-amber-600">Sector disponible</p>
+              <h3 className="mb-1 text-xl font-black leading-none tracking-normal text-slate-950 uppercase">{sub.name}</h3>
+              <p className="text-[9px] font-bold leading-tight text-slate-500">{sub.description}</p>
             </button>
           ))}
         </div>
@@ -2940,7 +2968,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
   return (
     <div className="pwa-container">
       <Header />
-      <div className="pwa-content">
+      <div className="pwa-content hoperia-public-body">
         <AnimatePresence mode="wait">
           {screen === 'welcome' && <WelcomeScreen key="welcome" />}
           {screen === 'housing_type' && <HousingTypeScreen key="type" />}

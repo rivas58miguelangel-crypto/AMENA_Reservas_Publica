@@ -4,11 +4,18 @@
 @theme {
   --font-headline: "Manrope", sans-serif;
   --font-body: "Inter", sans-serif;
-  
-  --color-primary: #254f66; /* Navy profundo del logo */
-  --color-accent: #d8862e;  /* Naranja Amena */
-  --color-surface: #faf9f6; /* Marfil cálido de fondo */
-  --color-header: #9a9490;  /* Gray/Taupe Header */
+
+  --color-primary: #254f66;
+  --color-accent: #d8862e;
+  --color-surface: #faf9f6;
+  --color-header: #9a9490;
+
+  --color-hoperia-slate-950: #020617;
+  --color-hoperia-slate-900: #0f172a;
+  --color-hoperia-slate-200: #e2e8f0;
+  --color-hoperia-slate-100: #f1f5f9;
+  --color-hoperia-slate-50: #f8fafc;
+  --color-hoperia-amber-300: #fcd34d;
   
   --shadow-pwa: 0 10px 40px rgba(0, 0, 0, 0.05);
 }
@@ -52,10 +59,130 @@
 .pwa-content {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--color-surface);
+  background-color: var(--color-hoperia-slate-50);
 }
 
-/* Tarjetas y Botones */
+@layer components {
+  .hoperia-public-body {
+    background: linear-gradient(160deg, var(--color-hoperia-slate-100) 0%, #ffffff 42%, #fffbeb 100%);
+  }
+
+  .hoperia-public-screen {
+    @apply p-6;
+  }
+
+  .hoperia-public-heading {
+    @apply mb-3 text-[30px] font-black leading-tight tracking-normal text-slate-950 sm:text-[34px];
+    color: var(--color-hoperia-slate-950);
+  }
+
+  .hoperia-public-copy {
+    @apply mb-7 text-sm font-semibold leading-snug text-slate-600;
+  }
+
+  .hoperia-public-card {
+    @apply rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6;
+    border-color: var(--color-hoperia-slate-200);
+  }
+
+  .hoperia-public-header {
+    @apply p-6 text-white shadow-lg;
+    background:
+      linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.98)),
+      var(--color-hoperia-slate-950);
+  }
+
+  .hoperia-public-suite-row {
+    @apply mb-5 flex items-start justify-between gap-4;
+  }
+
+  .hoperia-public-kicker {
+    @apply text-[11px] font-black uppercase tracking-widest text-white;
+  }
+
+  .hoperia-public-system-copy {
+    @apply mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-300;
+  }
+
+  .hoperia-public-client-strip {
+    @apply mb-5 rounded-3xl border bg-white px-4 py-3 shadow-sm;
+  }
+
+  .hoperia-public-client-label {
+    @apply mb-1 text-[8px] font-black uppercase tracking-widest text-slate-500;
+  }
+
+  .hoperia-public-context-panel {
+    @apply rounded-3xl border border-slate-200 bg-slate-950 p-5 text-white shadow-sm;
+    background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.96)),
+      var(--color-hoperia-slate-950);
+  }
+
+  .hoperia-public-context-eyebrow {
+    @apply mb-2 text-[10px] font-black uppercase tracking-widest text-amber-300;
+  }
+
+  .hoperia-public-context-copy {
+    @apply text-sm font-semibold leading-snug text-slate-100;
+  }
+
+  .hoperia-public-card-label {
+    @apply mb-3 text-[10px] font-black uppercase tracking-widest text-amber-600;
+  }
+
+  .hoperia-public-field {
+    @apply w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none placeholder:text-slate-400 focus-visible:border-slate-950 focus-visible:ring-2 focus-visible:ring-amber-300;
+    border-color: var(--color-hoperia-slate-200);
+    background-color: var(--color-hoperia-slate-50);
+  }
+
+  .hoperia-public-button-primary {
+    @apply w-full rounded-2xl bg-slate-950 px-5 py-4 text-center text-xs font-black uppercase tracking-widest text-white shadow-sm transition-all hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 active:scale-[0.98];
+    background-color: var(--color-hoperia-slate-950);
+  }
+
+  .hoperia-public-button-secondary {
+    @apply w-full rounded-2xl border border-slate-200 bg-slate-100 px-5 py-4 text-left text-sm font-black text-slate-900 transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2;
+    border-color: var(--color-hoperia-slate-200);
+    background-color: var(--color-hoperia-slate-100);
+    color: var(--color-hoperia-slate-900);
+  }
+
+  .hoperia-public-choice {
+    @apply flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 text-center shadow-sm transition-all hover:border-slate-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 active:scale-[0.98];
+    border-color: var(--color-hoperia-slate-200);
+  }
+
+  .hoperia-public-choice-media {
+    @apply mb-4 aspect-square w-full overflow-hidden rounded-2xl bg-slate-100;
+  }
+
+  .hoperia-public-chip {
+    @apply mb-7 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3;
+    border-color: var(--color-hoperia-slate-200);
+    background-color: var(--color-hoperia-slate-100);
+  }
+
+  .hoperia-public-sector {
+    @apply flex min-h-36 flex-col items-start justify-center rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:border-slate-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 active:scale-[0.98];
+    border-color: var(--color-hoperia-slate-200);
+  }
+
+  .hoperia-public-progress {
+    @apply rounded-2xl border border-white/20 bg-white/10 px-4 py-2 shadow-sm;
+  }
+
+  .hoperia-public-progress-track {
+    @apply h-2 w-full overflow-hidden rounded-full bg-white/25;
+  }
+
+  .hoperia-public-progress-value {
+    @apply h-full rounded-full bg-amber-300;
+    background-color: var(--color-hoperia-amber-300);
+  }
+}
+
 .amena-btn {
   @apply w-full py-5 rounded-[2rem] font-black text-center transition-all active:scale-95 text-xs uppercase tracking-widest;
 }
