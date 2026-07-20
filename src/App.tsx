@@ -278,28 +278,29 @@ const App: React.FC = () => {
   // --- Components ---
 
   const Header = () => (
-    <div className="p-6 text-white shadow-lg" style={{ backgroundColor: projectBranding.secondaryColor }}>
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--brand-primary)]" />
-            <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--brand-primary)]" />
-            <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--brand-primary)]" />
-            <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--brand-primary)]" />
+    <div className="hoperia-header">
+      <div className="hoperia-header__top">
+        <div className="hoperia-brand-lockup">
+          <div className="hoperia-brand-mark">
+            <div />
+            <div />
+            <div />
+            <div />
           </div>
-          <div className="flex flex-col">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: projectBranding.primaryColor }}>{projectBranding.companyName}</p>
-            <h1 className="text-2xl font-black tracking-tight leading-none uppercase" style={{ color: projectBranding.primaryColor }}>{projectBranding.projectName}</h1>
-            <p className="text-[8px] font-black tracking-[0.3em] opacity-80 uppercase leading-none mt-1" style={{ color: projectBranding.primaryColor }}>{projectBranding.tagline}</p>
+          <div className="hoperia-brand-copy">
+            <p className="hoperia-suite-label">Suite H - OperIA</p>
+            <p className="hoperia-context-label">{projectBranding.companyName}</p>
+            <h1 className="hoperia-project-title">{projectBranding.projectName}</h1>
+            <p className="hoperia-context-tagline">{projectBranding.tagline}</p>
           </div>
         </div>
-        <div className="bg-white px-6 py-2 rounded-full shadow-md">
-          <span className="text-[12px] font-black text-[var(--brand-accent)] uppercase tracking-widest whitespace-nowrap">PASO {step} DE {totalSteps}</span>
+        <div className="hoperia-progress-badge">
+          <span>PASO {step} DE {totalSteps}</span>
         </div>
       </div>
-      <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+      <div className="hoperia-progress-track">
         <motion.div 
-          className="h-full rounded-full shadow-[0_0_10px_rgba(208,131,59,0.5)]" style={{ backgroundColor: projectBranding.accentColor }} 
+          className="hoperia-progress-value"
           initial={{ width: 0 }}
           animate={{ width: `${(step / totalSteps) * 100}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
@@ -312,7 +313,7 @@ const App: React.FC = () => {
     <button 
       onClick={handleBack}
       className={cn(
-        "flex items-center gap-1 text-[10px] font-black text-primary uppercase mb-4 transition-opacity",
+        "hoperia-back-button",
         step === 1 && "opacity-0 pointer-events-none"
       )}
     >
@@ -570,26 +571,26 @@ const App: React.FC = () => {
   const WelcomeScreen = () => (
     <motion.div 
       initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-      className="p-8"
+      className="hoperia-screen"
     >
       <BackButton />
-      <h2 className="text-[28px] font-black text-primary leading-tight mb-4 tracking-tight">
-        Bienvenido al visualizador digital
+      <h2 className="hoperia-screen-title">
+        Experiencia demo H - OperIA
       </h2>
-      <p className="inline-flex rounded-full bg-accent/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-accent mb-4">
-        Demo · Datos simulados
+      <p className="hoperia-kicker">
+        Centro Demo · Datos simulados
       </p>
-      <p className="text-secondary font-medium text-sm leading-snug mb-8">
-        Conoce mejor el proyecto, revisa disponibilidad y avanza hacia una pre reserva con mayor claridad.
+      <p className="hoperia-screen-copy">
+        Recorre una experiencia de reservas generica para mostrar como H - OperIA organiza contexto, decisiones y seguimiento comercial.
       </p>
 
-      <div className="amena-card-welcome mb-8 p-8 rounded-3xl bg-[#dbe2e5]">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-accent mb-2">Nova Hábitat presenta</p>
-        <h3 className="text-4xl font-black text-primary mb-6 tracking-tight">Bienvenido a Distrito Norte</h3>
-        <p className="text-primary font-bold text-xl leading-relaxed mb-8 opacity-90">
-          Antes de iniciar el recorrido, completa tus datos para personalizar tu experiencia y registrar correctamente tu interés en el proyecto.
+      <div className="hoperia-primary-card amena-card-welcome">
+        <p className="hoperia-card-eyebrow">Empresa Demo presenta</p>
+        <h3 className="hoperia-feature-title">Proyecto de Empresa Demo</h3>
+        <p className="hoperia-feature-copy">
+          Antes de iniciar el recorrido, completa datos ficticios para personalizar la demostracion y simular correctamente tu interes en el proyecto.
         </p>
-        <div className="space-y-5 text-base text-primary">
+        <div className="hoperia-form-stack">
           {[
             { key: 'firstName', label: 'Nombres', placeholder: 'Ej. Miguel' },
             { key: 'lastName', label: 'Apellidos', placeholder: 'Ej. Rivas' },
@@ -597,14 +598,14 @@ const App: React.FC = () => {
             { key: 'phone', label: 'Teléfono celular con código de país', placeholder: 'Ej. +503 7000-0000', type: 'tel' },
             { key: 'dui', label: 'DUI opcional', placeholder: 'Ej. 00000000-0' },
           ].map((field) => (
-            <label key={field.key} className="block border-b border-primary/20 pb-3">
-              <span className="block font-black uppercase tracking-widest text-xs mb-2">{field.label}</span>
+            <label key={field.key} className="hoperia-field">
+              <span>{field.label}</span>
               <input
                 type={field.type || 'text'}
                 defaultValue={interestedPerson[field.key as keyof typeof interestedPerson]}
                 onBlur={(event) => setInterestedPerson((current) => ({ ...current, [field.key]: event.target.value }))}
                 placeholder={field.placeholder}
-                className="w-full bg-white/70 rounded-2xl px-4 py-3 text-primary font-bold outline-none placeholder:text-primary/40"
+                className="hoperia-input"
               />
             </label>
           ))}
@@ -612,14 +613,14 @@ const App: React.FC = () => {
       </div>
 
       <div className={cn(
-        "w-full p-5 rounded-2xl border mb-8 bg-white transition-all",
-        acceptedTerms ? "border-primary" : "border-transparent shadow-sm"
+        "hoperia-support-card",
+        acceptedTerms ? "hoperia-support-card--active" : ""
       )}>
         <button
           onClick={() => setAcceptedTerms(!acceptedTerms)}
-          className="w-full flex items-center justify-between"
+          className="hoperia-check-row"
         >
-          <p className="text-sm font-bold text-primary text-left pr-4">
+          <p>
             Comprendo que esta experiencia es una demostración con datos simulados.
           </p>
           <div className={cn(
@@ -632,7 +633,7 @@ const App: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsTermsModalOpen(true)}
-          className="mt-3 text-left text-xs font-black text-primary underline underline-offset-4"
+          className="hoperia-link-button"
         >
           Ver condiciones de uso y tratamiento de datos
         </button>
@@ -698,18 +699,18 @@ onClick={(event) => {
   navigateTo('housing_type', 2);
 }}
         className={cn(
-          "amena-btn amena-btn-dark mb-4",
+          "amena-btn amena-btn-dark hoperia-primary-action",
           !acceptedTerms && "opacity-50 grayscale"
         )}
       >
         COMENZAR RECORRIDO
       </button>
 
-      <div className="text-center space-y-4">
-        <button className="text-primary font-bold text-sm underline underline-offset-4">App ADMIN</button>
-        <div className="pt-8 border-t border-primary/10">
-          <p className="text-[16px] font-black text-primary/80 uppercase tracking-widest leading-tight mb-2">Automatiza Hoy IA</p>
-          <p className="text-[14px] font-bold text-blue-700 lowercase">E-mail: marivas@automatizahoy.ai</p>
+      <div className="hoperia-footer-note">
+        <button>Centro Demo H - OperIA</button>
+        <div>
+          <p>Suite H - OperIA</p>
+          <p>Experiencia comercial demostrativa</p>
         </div>
       </div>
     </motion.div>
@@ -727,7 +728,7 @@ onClick={(event) => {
         price: 'Desde $119k',
         area: '126m² - 182m²',
         description: 'Jardín propio, espacios familiares, cochera y distribución independiente.',
-        caption: 'Distrito Norte · Casa Olivo'
+        caption: 'Proyecto Demo · Casa Olivo'
       },
       {
         type: 'image',
@@ -736,21 +737,21 @@ onClick={(event) => {
         price: 'Desde $58k',
         area: '42m² - 76m²',
         description: 'Distribuciones funcionales, áreas compartidas y opciones para distintos estilos de vida.',
-        caption: 'Distrito Norte · Apartamento Prisma'
+        caption: 'Proyecto Demo · Apartamento Prisma'
       }
     ];
 
     return (
       <motion.div 
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-        className="p-8"
+        className="hoperia-screen"
       >
         <BackButton />
-        <h2 className="text-[32px] font-black text-accent leading-none mb-4 tracking-tight uppercase">
-          Tu Futuro Hogar
+        <h2 className="hoperia-screen-title">
+          Camino de reserva demo
         </h2>
-        <p className="text-secondary font-medium text-sm mb-8 leading-snug">
-          Selecciona el formato de vivienda que mejor se adapte a tu estilo de vida.
+        <p className="hoperia-screen-copy">
+          Selecciona el formato de vivienda para mostrar como el recorrido ordena alternativas comerciales.
         </p>
 
         <button 
@@ -758,15 +759,15 @@ onClick={(event) => {
             setCarouselStep(0);
             setIsComparisonOpen(true);
           }}
-          className="w-full flex justify-between items-center p-5 border border-accent/20 rounded-2xl bg-accent/5 mb-8 active:bg-accent/10 transition-colors"
+          className="hoperia-secondary-action"
         >
-          <span className="font-bold text-primary text-sm">Visualizador Comparativo</span>
-          <div className="flex items-center text-accent font-bold text-xs tracking-tight gap-1">
+          <span>Visualizador Comparativo</span>
+          <div>
             Abrir Guía <ArrowRight className="w-4 h-4 ml-1" />
           </div>
         </button>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="hoperia-choice-grid">
           <button
             onClick={() => {
   setSelectedType('casas');
@@ -776,13 +777,13 @@ onClick={(event) => {
   });
   navigateTo('sector_selection', 3);
 }}
-            className="group bg-white border-2 border-transparent hover:border-primary/20 rounded-[2rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3"
+            className="hoperia-choice-card group"
           >
-            <div className="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
+            <div className="hoperia-choice-media">
                <img src="./demo/casa-exterior.png" alt="Casas" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             </div>
-            <h3 className="text-[13px] font-black text-primary leading-tight uppercase tracking-tight mb-0.5">Residencial</h3>
-            <p className="text-[8px] font-bold text-secondary tracking-tight opacity-70 uppercase">Casas</p>
+            <h3>Residencial</h3>
+            <p>Casas</p>
           </button>
 
           <button
@@ -794,13 +795,13 @@ onClick={(event) => {
               });
               navigateTo('sector_selection', 3);
             }}
-            className="group bg-white border-2 border-transparent hover:border-accent/20 rounded-[2rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3"
+            className="hoperia-choice-card group"
           >
-             <div className="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
+             <div className="hoperia-choice-media">
                <img src="./demo/apartamento-exterior.png" alt="Apartamentos" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             </div>
-            <h3 className="text-[13px] font-black text-accent leading-tight uppercase tracking-tight mb-0.5">Vertical</h3>
-            <p className="text-[8px] font-bold text-secondary tracking-tight opacity-70 uppercase">Apartamentos</p>
+            <h3>Vertical</h3>
+            <p>Apartamentos</p>
           </button>
         </div>
 
@@ -899,33 +900,33 @@ onClick={(event) => {
     return (
       <motion.div 
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-        className="p-8"
+        className="hoperia-screen"
       >
         <BackButton />
-        <h2 className={`text-[32px] font-black ${accentColor} leading-none mb-4 tracking-tight uppercase`}>
+        <h2 className="hoperia-screen-title">
           Selecciona Sector
         </h2>
-        <p className="text-secondary font-medium text-sm leading-snug mb-8">
+        <p className="hoperia-screen-copy">
           Elige el sector en el que deseas explorar disponibilidad de {isApartments ? 'apartamentos' : 'casas'}.
         </p>
 
         <button 
           onClick={() => setIsSectorMapOpen(true)}
-          className={`w-full flex justify-between items-center py-5 border-y ${isApartments ? 'border-accent/10' : 'border-primary/10'} mb-8 active:bg-black/5 px-2 transition-colors group`}
+          className="hoperia-secondary-action group"
         >
-          <span className="font-black text-primary text-lg tracking-tight">Ver sectores del proyecto</span>
-          <div className={`flex items-center ${accentColor} font-black uppercase text-[10px] tracking-widest gap-2`}>
+          <span>Ver sectores del proyecto</span>
+          <div>
             Abrir <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </button>
 
-        <div className="bg-[#f7f2eb] p-4 rounded-full border border-[#e8dfd1] mb-8">
-           <p className="text-[10px] font-black text-primary uppercase text-center tracking-tight flex items-center justify-center gap-1">
+        <div className="hoperia-context-chip">
+           <p>
              <span className="opacity-80">{isApartments ? 'APARTAMENTOS' : 'CASAS'}</span>
            </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="hoperia-choice-grid">
           {SECTORS.map((sub) => (
             <button
               key={sub.id}
@@ -942,10 +943,10 @@ onClick={(event) => {
                 }
                 navigateTo('torre_selection', 4);
               }}
-              className={`group bg-white rounded-2xl p-6 text-left shadow-sm border-2 border-transparent ${isApartments ? 'active:border-accent' : 'active:border-primary'} hover:shadow-md transition-all flex flex-col items-start justify-center`}
+              className="hoperia-choice-card hoperia-choice-card--compact group"
             >
-              <h3 className={`text-xl font-black ${accentColor} mb-1 leading-none uppercase tracking-tight`}>{sub.name}</h3>
-              <p className="text-[9px] font-bold text-secondary opacity-60 leading-tight">{sub.description}</p>
+              <h3>{sub.name}</h3>
+              <p>{sub.description}</p>
             </button>
           ))}
         </div>
@@ -970,38 +971,38 @@ onClick={(event) => {
     return (
       <motion.div 
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-        className="p-8"
+        className="hoperia-screen"
       >
         <BackButton />
-        <h2 className={`text-[32px] font-black ${accentColor} leading-none mb-4 tracking-tight uppercase`}>
+        <h2 className="hoperia-screen-title">
           {isApartments ? 'Selecciona Torre' : 'Selecciona Manzana'}
         </h2>
-        <p className="text-secondary font-medium text-sm leading-snug mb-8">
+        <p className="hoperia-screen-copy">
           {isApartments 
             ? 'Estas son las torres que actualmente cuentan con apartamentos disponibles dentro del sector elegido.'
             : 'Estas son las manzanas que actualmente cuentan con casas disponibles dentro del sector elegido.'
           }
         </p>
 
-<div className="bg-[#f7f2eb] p-4 rounded-full border border-[#e8dfd1] mb-8">
-  <p className="text-[10px] font-black text-primary uppercase text-center tracking-tight">
+<div className="hoperia-context-chip">
+  <p>
     {isApartments ? 'APARTAMENTOS' : 'CASAS'} · {selectedSector?.name}
   </p>
 </div>
 {!isApartments && (
   <button
     onClick={() => setIsManzanasModalOpen(true)}
-    className="w-full p-4 bg-white rounded-2xl border text-primary font-black"
+    className="hoperia-secondary-action hoperia-secondary-action--solo"
   >
     Ver manzanas disponibles
   </button>
 )}
         {targetsToDisplay && (
-          <div className="bg-[#f7f2eb] p-6 rounded-[2rem] border border-[#e8dfd1] mb-8 shadow-sm">
-            <h4 className="text-[10px] font-black text-primary/60 uppercase tracking-widest mb-6 text-center">
+          <div className="hoperia-primary-card">
+            <h4 className="hoperia-card-section-title">
               {isApartments ? 'Torres' : 'Manzanas'} con disponibilidad en este sector
             </h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="hoperia-choice-grid">
               {targetsToDisplay.map((target) => (
                 <button
                   key={target.id}
@@ -1016,15 +1017,15 @@ onClick={(event) => {
                     });
                     navigateTo('model_selection', 5);
                   }}
-                  className={`bg-white border ${isApartments ? 'border-accent/10' : 'border-primary/10'} rounded-2xl p-6 text-left flex flex-col gap-2 shadow-sm ${isApartments ? 'active:ring-accent/20' : 'active:ring-primary/20'} transition-all group`}
+                  className="hoperia-choice-card hoperia-choice-card--compact hoperia-choice-card--status group"
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="text-2xl font-black text-primary leading-none uppercase">{target.label}</div>
-                    <div className="px-2 py-0.5 bg-green-500 rounded-full text-[8px] text-white font-black uppercase">Disponibles</div>
+                  <div className="hoperia-choice-card__row">
+                    <div>{target.label}</div>
+                    <span>Disponibles</span>
                   </div>
-                  <div className="space-y-1 opacity-70">
-                    <p className="text-[10px] font-black text-primary uppercase">{isApartments ? 'Prisma:' : 'Olivo:'} {Math.floor(Math.random() * 5) + 1} disp.</p>
-                    <p className="text-[10px] font-black text-primary uppercase">{isApartments ? 'Horizonte:' : 'Cedro:'} {Math.floor(Math.random() * 3) + 1} disp.</p>
+                  <div className="hoperia-card-meta-stack">
+                    <p>{isApartments ? 'Prisma:' : 'Olivo:'} {Math.floor(Math.random() * 5) + 1} disp.</p>
+                    <p>{isApartments ? 'Horizonte:' : 'Cedro:'} {Math.floor(Math.random() * 3) + 1} disp.</p>
                   </div>
                 </button>
               ))}
@@ -1046,37 +1047,37 @@ onClick={(event) => {
     return (
       <motion.div 
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-        className="p-8 pb-32"
+        className="hoperia-screen hoperia-screen--with-footer"
       >
         <BackButton />
-        <h2 className={`text-[32px] font-black ${accentColor} leading-tight mb-4 tracking-tight uppercase`}>
+        <h2 className="hoperia-screen-title">
           Selecciona Modelo de {isApartments ? 'Apartamento' : 'Casa'}
         </h2>
-        <p className="text-secondary font-medium text-sm leading-snug mb-8">
+        <p className="hoperia-screen-copy">
           Revisa el área y el valor referencial de los modelos disponibles antes de continuar.
         </p>
 
         <button 
           onClick={() => setIsModelGalleryOpen(true)}
-          className="w-full flex justify-between items-center p-6 bg-[#f7f2eb] border border-[#e8dfd1] rounded-[2rem] mb-6 shadow-sm group active:bg-[#ede3d5] transition-colors text-left"
+          className="hoperia-secondary-action group"
         >
-          <span className="font-bold text-primary text-[14px] leading-tight w-3/4">Vea los detalles de cada uno de los modelos de {isApartments ? 'apartamentos' : 'casas'} disponibles</span>
-          <div className={`flex items-center ${accentColor} font-black text-[12px] uppercase tracking-widest gap-2`}>
+          <span>Vea los detalles de cada uno de los modelos de {isApartments ? 'apartamentos' : 'casas'} disponibles</span>
+          <div>
             ABRIR <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </button>
 
-        <div className="bg-[#f7f2eb] p-4 rounded-full border border-[#e8dfd1] mb-8">
-           <p className="text-[10px] font-black text-primary uppercase text-center tracking-tight flex items-center justify-center gap-1">
+        <div className="hoperia-context-chip">
+           <p>
              <span className="opacity-80 uppercase">{isApartments ? 'APARTAMENTOS' : 'CASAS'}</span> 
              <span className="opacity-30">·</span> 
-             <span className={`${accentColor}`}>{selectedSector?.name || 'SECTOR 02'}</span>
+             <span>{selectedSector?.name || 'SECTOR 02'}</span>
              <span className="opacity-30 ml-1">·</span> 
-             <span className={`${accentColor} ml-1`}>{selectedTorre?.label || (isApartments ? 'T5' : 'MZ A')}</span>
+             <span>{selectedTorre?.label || (isApartments ? 'T5' : 'MZ A')}</span>
            </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="hoperia-choice-grid">
           {models.length > 0 ? models.map((model) => (
             <button
               key={model.id}
@@ -1096,15 +1097,15 @@ onClick={(event) => {
                 else navigateTo('unit_selection', 7);
               }}
               className={cn(
-                "group bg-white border-2 rounded-[2.5rem] overflow-hidden text-center flex flex-col items-center shadow-lg active:scale-95 transition-all p-3",
-                selectedModel?.id === model.id ? (isApartments ? "border-accent shadow-accent/20 scale-[1.02]" : "border-primary shadow-primary/20 scale-[1.02]") : "border-transparent hover:border-black/10"
+                "hoperia-choice-card hoperia-choice-card--model group",
+                selectedModel?.id === model.id && "hoperia-choice-card--selected"
               )}
             >
-              <div className="w-full aspect-square rounded-[2rem] overflow-hidden mb-4 bg-gray-100">
+              <div className="hoperia-choice-media">
                 <img src={model.image} alt={model.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               </div>
-              <h3 className="text-[13px] font-black text-primary leading-tight uppercase tracking-tight mb-0.5">{model.name}</h3>
-              <p className="text-[8px] font-bold text-secondary tracking-tight opacity-70 uppercase">Desde {model.price}</p>
+              <h3>{model.name}</h3>
+              <p>Desde {model.price}</p>
             </button>
           )) : (
             <div className="col-span-2 py-20 text-center text-primary/40 font-bold italic">
@@ -1436,7 +1437,7 @@ const UnitSelectionScreen = () => {
           Confirma tu Interés
         </h2>
         <p className="text-secondary font-medium text-sm leading-snug mb-8">
-          Estás a un paso de completar tu selección demo en Distrito Norte. Revisa el resumen.
+          Estás a un paso de completar tu selección demo en Proyecto de Empresa Demo. Revisa el resumen.
         </p>
 
         <div className="bg-[#f7f2eb] p-10 rounded-[2.5rem] border border-[#e8dfd1] mb-10 shadow-md">
@@ -2879,7 +2880,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
         Proceso finalizado correctamente
       </h2>
       <p className="text-secondary font-bold text-lg leading-snug mb-10 opacity-80">
-        La información demo fue registrada correctamente. Gracias por recorrer Distrito Norte.
+        La información demo fue registrada correctamente. Gracias por recorrer Proyecto de Empresa Demo.
       </p>
 
       <div className="bg-[#f7f2eb] p-8 rounded-[2rem] border border-[#e8dfd1] mb-8 shadow-sm space-y-4">
@@ -2909,7 +2910,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
             'La pre reserva ha quedado registrada en el sistema.',
             'La acción comercial seleccionada ha sido registrada correctamente.',
             'El escenario muestra cómo un equipo comercial podría continuar el acompañamiento.',
-            'Gracias por explorar Nova Hábitat · Distrito Norte.'
+            'Gracias por explorar Empresa Demo · Proyecto de Empresa Demo.'
           ].map((text, i) => (
             <li key={i} className="flex items-start gap-3 text-[13px] font-bold text-primary/80 leading-tight">
               <div className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
@@ -2945,7 +2946,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
   return (
     <div className="pwa-container">
       <Header />
-      <div className="pwa-content">
+      <div className="pwa-content hoperia-continuity-flow">
         <AnimatePresence mode="wait">
           {screen === 'welcome' && <WelcomeScreen key="welcome" />}
           {screen === 'housing_type' && <HousingTypeScreen key="type" />}
@@ -2985,13 +2986,13 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
   onClose={() => setIsMasterPlanOpen(false)}
   title="Master Plan Maestro"
   imageUrl="./demo/vista-global.png"
-  message="Visualiza la distribución referencial del proyecto demo Distrito Norte."
+  message="Visualiza la distribución referencial de Proyecto de Empresa Demo."
 />
 
 <ImageModal
   isOpen={isSectorMapOpen}
   onClose={() => setIsSectorMapOpen(false)}
-  title="Distrito Norte · Vista Global"
+  title="Proyecto de Empresa Demo · Vista Global"
   imageUrl="./demo/vista-global.png"
   message="Todos los espacios pertenecen a un SECTOR. Vista 3D referencial."
 />
