@@ -1,43 +1,180 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-headline: "Manrope", sans-serif;
   --font-body: "Inter", sans-serif;
   
-  --color-primary: #254f66; /* Navy profundo del logo */
-  --color-accent: #d8862e;  /* Naranja Amena */
-  --color-surface: #faf9f6; /* Marfil cálido de fondo */
+  --color-primary: #254f66; /* Azul institucional demo */
+  --color-accent: #d8862e;  /* Acento comercial demo */
+  --color-surface: #faf9f6; /* Marfil calido de fondo */
   --color-header: #9a9490;  /* Gray/Taupe Header */
   
   --shadow-pwa: 0 10px 40px rgba(0, 0, 0, 0.05);
+  --hoperia-header: #020617;
+  --hoperia-primary: #0f172a;
+  --hoperia-accent: #d8862e;
+  --hoperia-accent-soft: #fcd34d;
+  --hoperia-bg-warm: #f8fafc;
+  --hoperia-surface: #ffffff;
+  --hoperia-surface-muted: #f8fafc;
+  --hoperia-border: #e2e8f0;
+  --hoperia-text-strong: #020617;
+  --hoperia-text: #1e293b;
+  --hoperia-text-muted: #475569;
+  --hoperia-success: #10b981;
+  --hoperia-warning: #d97706;
+  --hoperia-shadow-soft: 0 1px 3px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.06);
+  --hoperia-shadow-raised: 0 8px 18px rgba(15, 23, 42, 0.16);
+  --hoperia-radius-card: 24px;
+  --hoperia-radius-inner: 16px;
+  --hoperia-radius-control: 14px;
 }
 
 @layer base {
   body {
-    @apply bg-neutral-200 font-body text-zinc-900 min-h-screen flex items-center justify-center p-0 overflow-y-auto;
+    @apply bg-neutral-200 text-zinc-900 min-h-screen flex items-center justify-center overflow-y-auto;
+    padding: 28px 12px;
+    font-family: Inter, Arial, Helvetica, sans-serif;
   }
+}
+
+/* Arquitectura visual H - OperIA para Ruta 2 */
+.hoperia-header {
+  background: var(--hoperia-header);
+  color: #f8fafc;
+  padding: 23px 21px 19px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.hoperia-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.hoperia-brand-lockup {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  gap: 11px;
+}
+
+.hoperia-brand-mark {
+  display: grid;
+  width: 27px;
+  grid-template-columns: repeat(2, 7px);
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.hoperia-brand-mark div {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 1.5px solid var(--hoperia-accent-soft);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.hoperia-brand-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.hoperia-suite-label {
+  font-size: 18px;
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: white;
+}
+
+.hoperia-brand-slogan {
+  max-width: 210px;
+  margin-top: 4px;
+  color: #cbd5e1;
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.hoperia-module-label {
+  margin-top: 5px;
+  color: var(--hoperia-accent-soft);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.hoperia-progress-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 8px 12px;
+}
+
+.hoperia-progress-badge span {
+  display: block;
+  white-space: nowrap;
+  font-size: 9px;
+  line-height: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: white;
+}
+
+.hoperia-progress-track {
+  height: 7px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+}
+
+.hoperia-progress-value {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--hoperia-accent-soft);
 }
 
 /* Estructura PWA */
 .pwa-container {
-  max-width: 460px;
+  max-width: 392px;
   width: 100%;
-  min-height: 100vh;
+  height: min(882px, calc(100vh - 34px));
+  min-height: 0;
   margin: 0 auto;
-  background-color: var(--color-surface);
+  background: var(--hoperia-bg-warm);
   position: relative;
   overflow: hidden; /* Header and Footer stay fixed if we use pwa-content for scroll */
-  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.14);
   display: flex;
   flex-direction: column;
-  border-radius: 4rem;
+  border-radius: 48px;
 }
 
-@media (min-height: 800px) {
+@media (max-width: 430px) {
   .pwa-container {
-    height: 92vh;
-    min-height: auto;
+    width: 100%;
+    height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  body {
+    padding: 0;
   }
 }
 
@@ -52,7 +189,7 @@
 .pwa-content {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--color-surface);
+  background: transparent;
 }
 
 /* Tarjetas y Botones */
@@ -63,6 +200,781 @@
 .amena-btn-dark {
   background-color: var(--color-primary);
   color: white;
+}
+
+.hoperia-screen {
+  padding: 1.2rem 1.15rem 1.4rem;
+}
+
+.hoperia-screen--with-footer {
+  padding-bottom: 7.5rem;
+}
+
+.hoperia-app-screen {
+  padding: 25px 27px 32px;
+  color: var(--hoperia-text);
+}
+
+.hoperia-app-card {
+  border: 1px solid var(--hoperia-border);
+  border-radius: var(--hoperia-radius-card);
+  background: var(--hoperia-surface);
+  box-shadow: var(--hoperia-shadow-soft);
+  padding: 22px;
+}
+
+.hoperia-context-block {
+  margin-bottom: 0;
+}
+
+.hoperia-actions-block {
+  margin: 0;
+}
+
+.hoperia-back-button {
+  margin-bottom: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 1rem;
+  color: #475569;
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: opacity 160ms ease, background-color 160ms ease;
+}
+
+.hoperia-back-button:hover {
+  color: var(--hoperia-text-strong);
+}
+
+.hoperia-screen-title {
+  margin: 0 0 9px;
+  color: var(--hoperia-text-strong);
+  font-size: 28px;
+  line-height: 1.08;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.025em;
+}
+
+.hoperia-kicker {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid #fde68a;
+  background: #fef3c7;
+  padding: 7px 11px;
+  color: #92400e;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.hoperia-screen-copy {
+  max-width: none;
+  margin: 0 0 24px;
+  color: var(--hoperia-text-muted);
+  font-size: 13px;
+  line-height: 1.38;
+  font-weight: 650;
+}
+
+.hoperia-primary-card,
+.hoperia-support-card,
+.hoperia-choice-card,
+.hoperia-secondary-action,
+.hoperia-context-chip {
+  border: 1px solid var(--hoperia-border);
+  background: var(--hoperia-surface);
+  box-shadow: var(--hoperia-shadow-soft);
+}
+
+.hoperia-primary-card {
+  margin-bottom: 1rem;
+  border-radius: var(--hoperia-radius-card);
+  padding: 1rem;
+}
+
+.hoperia-card-eyebrow {
+  color: var(--hoperia-primary);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.hoperia-feature-title {
+  margin-bottom: 0.7rem;
+  color: var(--hoperia-text-strong);
+  font-size: 1.35rem;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.hoperia-feature-copy {
+  margin-bottom: 1rem;
+  color: var(--hoperia-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.hoperia-form-stack {
+  display: grid;
+  gap: 0.65rem;
+  color: var(--hoperia-text-strong);
+}
+
+.hoperia-field {
+  display: block;
+  border-bottom: 1px solid var(--hoperia-border);
+  padding-bottom: 0.65rem;
+}
+
+.hoperia-field span {
+  margin-bottom: 0.4rem;
+  display: block;
+  color: var(--hoperia-text-muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.hoperia-input {
+  width: 100%;
+  border-radius: var(--hoperia-radius-control);
+  border: 1px solid var(--hoperia-border);
+  background: var(--hoperia-surface-muted);
+  padding: 0.65rem 0.75rem;
+  color: var(--hoperia-text-strong);
+  font-weight: 750;
+  outline: none;
+}
+
+.hoperia-input::placeholder {
+  color: #94a3b8;
+}
+
+.hoperia-input:focus {
+  border-color: var(--hoperia-accent-soft);
+  background: #ffffff;
+}
+
+.hoperia-support-card {
+  margin-bottom: 1rem;
+  border-radius: var(--hoperia-radius-inner);
+  padding: 0.8rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.hoperia-support-card--active {
+  border-color: color-mix(in srgb, var(--hoperia-primary) 20%, var(--hoperia-border));
+  box-shadow: var(--hoperia-shadow-soft);
+}
+
+.hoperia-check-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.hoperia-check-row p {
+  color: var(--hoperia-text);
+  text-align: left;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.hoperia-link-button {
+  margin-top: 0.75rem;
+  color: var(--hoperia-text);
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.hoperia-primary-action {
+  display: flex;
+  min-height: 69px;
+  width: 100%;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hoperia-radius-card);
+  background: var(--hoperia-primary);
+  color: white;
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  box-shadow: var(--hoperia-shadow-raised);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.hoperia-primary-action:active,
+.hoperia-secondary-button:active {
+  transform: scale(0.98);
+}
+
+.hoperia-secondary-button {
+  display: flex;
+  height: 58px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  margin-top: 15px;
+  border: 1px solid color-mix(in srgb, var(--hoperia-primary) 18%, transparent);
+  border-radius: var(--hoperia-radius-inner);
+  background: transparent;
+  color: var(--hoperia-primary);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: var(--hoperia-shadow-soft);
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.hoperia-footer-note {
+  display: grid;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.hoperia-footer-note button {
+  color: var(--hoperia-text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.hoperia-footer-note div {
+  border-top: 1px solid var(--hoperia-border);
+  padding-top: 0.9rem;
+}
+
+.hoperia-footer-note p:first-child {
+  margin-bottom: 0.4rem;
+  color: var(--hoperia-text-strong);
+  font-size: 0.82rem;
+  line-height: 1.1;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.hoperia-footer-note p:last-child {
+  color: var(--hoperia-text-muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.hoperia-secondary-action {
+  margin-bottom: 0.9rem;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: var(--hoperia-radius-inner);
+  padding: 0.8rem 0.9rem;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.hoperia-secondary-action:active {
+  transform: scale(0.98);
+}
+
+.hoperia-secondary-action--solo {
+  justify-content: center;
+  color: var(--hoperia-text-strong);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.hoperia-secondary-action > span {
+  color: var(--hoperia-text-strong);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.hoperia-secondary-action > div {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--hoperia-warning);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.hoperia-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.hoperia-choice-card {
+  display: flex;
+  min-height: 9.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  border-radius: var(--hoperia-radius-card);
+  padding: 0.6rem;
+  text-align: center;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.hoperia-choice-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--hoperia-shadow-raised);
+}
+
+.hoperia-choice-card:active {
+  transform: scale(0.98);
+}
+
+.hoperia-choice-media {
+  margin-bottom: 0.6rem;
+  aspect-ratio: 1;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--hoperia-radius-inner);
+  background: #f1f5f9;
+}
+
+.hoperia-choice-card h3 {
+  margin-bottom: 0.25rem;
+  color: var(--hoperia-text-strong);
+  font-size: 0.86rem;
+  line-height: 1.15;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hoperia-choice-card p {
+  color: #64748b;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.hoperia-choice-card--compact {
+  min-height: 6.25rem;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.8rem;
+  text-align: left;
+}
+
+.hoperia-choice-card--compact h3 {
+  color: var(--hoperia-text-strong);
+  font-size: 1rem;
+}
+
+.hoperia-choice-card--compact p {
+  max-width: 10rem;
+  color: #64748b;
+  font-size: 0.7rem;
+  text-transform: none;
+}
+
+.hoperia-choice-card--status {
+  gap: 0.75rem;
+}
+
+.hoperia-choice-card__row {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.hoperia-choice-card__row div {
+  color: var(--hoperia-text-strong);
+  font-size: 1.05rem;
+  line-height: 1;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hoperia-choice-card__row span {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hoperia-success) 14%, white);
+  border: 1px solid color-mix(in srgb, var(--hoperia-success) 24%, white);
+  color: color-mix(in srgb, var(--hoperia-success) 42%, var(--hoperia-text-strong));
+  padding: 0.22rem 0.45rem;
+  font-size: 0.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hoperia-card-meta-stack {
+  display: grid;
+  gap: 0.25rem;
+  opacity: 0.82;
+}
+
+.hoperia-card-meta-stack p {
+  color: var(--hoperia-text);
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hoperia-card-section-title {
+  margin-bottom: 0.7rem;
+  color: var(--hoperia-text-muted);
+  text-align: center;
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.hoperia-choice-card--model {
+  min-height: 10rem;
+}
+
+.hoperia-choice-card--selected {
+  border-color: var(--hoperia-accent-soft);
+  box-shadow: var(--hoperia-shadow-raised);
+  transform: scale(1.01);
+}
+
+.hoperia-context-chip {
+  margin-bottom: 0.9rem;
+  border-radius: var(--hoperia-radius-inner);
+  padding: 0.65rem 0.8rem;
+}
+
+.hoperia-context-chip p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hoperia-text);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Primitivas semánticas migradas: encabezado, bienvenida y cierre. */
+.hoperia-welcome-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 24px;
+}
+
+.hoperia-welcome-context .hoperia-kicker,
+.hoperia-welcome-context .hoperia-card-eyebrow {
+  margin: 0;
+}
+
+.hoperia-welcome-project {
+  width: 100%;
+  margin: 0;
+  color: var(--hoperia-text-strong);
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.hoperia-capture-card {
+  padding: 22px;
+}
+
+.hoperia-consent-card {
+  margin-top: 20px;
+  padding: 22px;
+}
+
+.hoperia-welcome-actions {
+  margin-top: 0;
+}
+
+.hoperia-success-screen {
+  padding-top: 58px;
+  text-align: center;
+}
+
+.hoperia-success-status {
+  display: grid;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 22px;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hoperia-success) 12%, white);
+  color: var(--hoperia-success);
+}
+
+.hoperia-success-tag {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  margin: 0 0 18px;
+  border: 1px solid color-mix(in srgb, var(--hoperia-success) 24%, var(--hoperia-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hoperia-success) 10%, white);
+  padding: 7px 11px;
+  color: color-mix(in srgb, var(--hoperia-success) 42%, var(--hoperia-primary));
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hoperia-success-screen .hoperia-screen-copy {
+  max-width: none;
+  margin-right: auto;
+  margin-left: auto;
+  text-align: center;
+}
+
+.hoperia-success-context {
+  margin: 30px 0 13px;
+  text-align: left;
+}
+
+.hoperia-success-context > section {
+  margin: 0;
+}
+
+.hoperia-reservation-context-card {
+  margin: 0;
+  border: 1px solid var(--hoperia-border);
+  border-radius: var(--hoperia-radius-card);
+  background: var(--hoperia-surface);
+  padding: 22px;
+  box-shadow: var(--hoperia-shadow-soft);
+}
+
+.hoperia-reservation-summary,
+.hoperia-next-step-card {
+  padding: 22px;
+  text-align: left;
+}
+
+.hoperia-summary-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.45rem;
+  margin: 0;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--hoperia-border);
+  color: var(--hoperia-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.hoperia-summary-line:first-of-type {
+  border-top: 0;
+}
+
+.hoperia-summary-line span {
+  color: var(--hoperia-text-muted);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hoperia-summary-line b {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.hoperia-next-step-card h4 {
+  margin: 0 0 0.65rem;
+  color: var(--hoperia-text-strong);
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hoperia-next-step-card ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hoperia-next-step-card li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: var(--hoperia-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.hoperia-next-step-card li span {
+  width: 0.35rem;
+  height: 0.35rem;
+  flex: 0 0 auto;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background: var(--hoperia-accent);
+}
+
+.hoperia-success-actions {
+  margin-top: 0;
+}
+
+/* Continuidad temporal para pantallas heredadas aún no migradas (pasos 2–14). */
+.hoperia-continuity-flow {
+  background: linear-gradient(180deg, var(--hoperia-bg-warm) 0%, var(--hoperia-surface) 58%, #f8fafc 100%);
+}
+
+.hoperia-continuity-flow > .p-8,
+.hoperia-continuity-flow > .p-0 {
+  color: var(--hoperia-text);
+}
+
+.hoperia-continuity-flow > .p-8,
+.hoperia-continuity-flow > .p-8.pb-32 {
+  padding: 1.2rem 1.15rem 1.5rem;
+}
+
+.hoperia-continuity-flow > .p-8 h1,
+.hoperia-continuity-flow > .p-8 h2,
+.hoperia-continuity-flow > .p-8 h3,
+.hoperia-continuity-flow > .p-8 h4,
+.hoperia-continuity-flow > .p-0 h1,
+.hoperia-continuity-flow > .p-0 h2,
+.hoperia-continuity-flow > .p-0 h3,
+.hoperia-continuity-flow > .p-0 h4 {
+  color: var(--hoperia-text-strong);
+  letter-spacing: 0;
+}
+
+.hoperia-continuity-flow > .p-8 h2,
+.hoperia-continuity-flow > .p-0 h2 {
+  font-size: 1.55rem;
+  line-height: 1.12;
+  font-weight: 800;
+}
+
+.hoperia-continuity-flow > .p-8 p[class*="text-secondary"],
+.hoperia-continuity-flow > .p-0 p[class*="text-secondary"] {
+  color: var(--hoperia-text-muted);
+}
+
+.hoperia-continuity-flow > .p-8 section,
+.hoperia-continuity-flow [class*="bg-[#f7f2eb]"] {
+  background: var(--hoperia-surface);
+  border-color: var(--hoperia-border);
+  box-shadow: var(--hoperia-shadow-soft);
+}
+
+.hoperia-continuity-flow > .p-8 section {
+  padding: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.hoperia-continuity-flow [class*="rounded-[2.5rem]"],
+.hoperia-continuity-flow [class*="rounded-[3rem]"],
+.hoperia-continuity-flow [class*="rounded-[4rem]"] {
+  border-radius: var(--hoperia-radius-card);
+}
+
+.hoperia-continuity-flow [class*="rounded-3xl"],
+.hoperia-continuity-flow [class*="rounded-2xl"] {
+  border-radius: var(--hoperia-radius-inner);
+}
+
+.hoperia-continuity-flow [class*="border-accent"],
+.hoperia-continuity-flow [class*="border-[#e8dfd1]"] {
+  border-color: var(--hoperia-border);
+}
+
+.hoperia-continuity-flow [class*="bg-accent/"] {
+  background-color: color-mix(in srgb, var(--hoperia-accent-soft) 16%, white);
+}
+
+.hoperia-continuity-flow [class*="bg-white/60"],
+.hoperia-continuity-flow [class*="bg-white/50"] {
+  background-color: var(--hoperia-surface-muted);
+}
+
+.hoperia-continuity-flow [class*="text-accent"] {
+  color: var(--hoperia-warning);
+}
+
+.hoperia-continuity-flow button[class*="bg-accent"],
+.hoperia-continuity-flow button[class*="bg-[#D4AF37]"] {
+  background: var(--hoperia-primary);
+  color: white;
+  box-shadow: var(--hoperia-shadow-raised);
+}
+
+.hoperia-continuity-flow button[class*="bg-primary"] {
+  background: var(--hoperia-primary);
+  color: white;
+  box-shadow: var(--hoperia-shadow-soft);
+}
+
+.hoperia-continuity-flow button[class*="border-"] {
+  border-color: var(--hoperia-border);
+}
+
+.hoperia-continuity-flow input,
+.hoperia-continuity-flow select,
+.hoperia-continuity-flow textarea {
+  border-color: var(--hoperia-border);
+  border-radius: var(--hoperia-radius-control);
+  background: var(--hoperia-surface-muted);
+  color: var(--hoperia-text-strong);
+  box-shadow: none;
+}
+
+.hoperia-continuity-flow input:focus,
+.hoperia-continuity-flow select:focus,
+.hoperia-continuity-flow textarea:focus {
+  border-color: var(--hoperia-accent-soft);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hoperia-accent-soft) 24%, transparent);
+}
+
+.hoperia-continuity-flow .grid > button[class*="bg-white"],
+.hoperia-continuity-flow .space-y-6 > section,
+.hoperia-continuity-flow .space-y-4 > section {
+  border: 1px solid var(--hoperia-border);
+  box-shadow: var(--hoperia-shadow-soft);
+}
+
+.hoperia-continuity-flow [class*="space-y-6"],
+.hoperia-continuity-flow [class*="space-y-8"] {
+  row-gap: 0.85rem;
+}
+
+.hoperia-continuity-flow [class*="border-dashed"] {
+  border-color: color-mix(in srgb, var(--hoperia-accent-soft) 72%, var(--hoperia-border));
 }
 
 .no-scrollbar::-webkit-scrollbar {
