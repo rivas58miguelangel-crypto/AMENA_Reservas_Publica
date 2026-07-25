@@ -57,10 +57,21 @@ type Screen =
 
 type MartaContactPreference = 'talk_now' | 'schedule_call' | 'whatsapp_link' | null;
 type ProjectVisitPreference = 'request_visit' | 'schedule_visit' | null;
+type Case2SendStatus = 'idle' | 'sending' | 'provider_accepted' | 'error' | 'receipt_confirmed';
 type AccompanimentSelection = {
   route: 'marta' | 'advisor';
   label: string;
   detail?: string;
+};
+
+type Case2WhatsappPayload = {
+  phone: string;
+  name: string;
+  reservationId: string;
+  selectedUnit: string;
+  referencePrice: string;
+  martaLink: string;
+  salesContact: string;
 };
 
 type PostReservationStatus = {
@@ -86,6 +97,10 @@ const initialInterestedPerson = {
   phone: '',
   dui: '',
 };
+
+const CASE2_MAX_RETRIES = 1;
+const CASE2_DEMO_MARTA_LINK = 'https://reservas.automatizahoy.ai/marta-demo-pendiente';
+const CASE2_DEMO_SALES_CONTACT = '+503 0000-0000';
 
 const App: React.FC = () => {
   const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
@@ -150,6 +165,8 @@ const App: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [postReservationStatus, setPostReservationStatus] = useState<PostReservationStatus>(initialPostReservationStatus);
   const [accompanimentSelections, setAccompanimentSelections] = useState<AccompanimentSelection[]>([]);
+  const [case2SendStatus, setCase2SendStatus] = useState<Case2SendStatus>('idle');
+  const [case2RetryCount, setCase2RetryCount] = useState(0);
 
   const totalSteps = 15;
   const isApartments = selectedType === 'apartamentos';
@@ -162,6 +179,26 @@ const App: React.FC = () => {
     { label: isApartments ? 'Unidad' : 'Lote', value: selectedUnit?.label },
     { label: 'Reservation ID', value: reservationId },
   ].filter((item) => Boolean(item.value));
+
+  const selectedUnitSummary = [
+    selectedType === 'apartamentos' ? 'Apartamento' : 'Casa',
+    selectedUnit?.label,
+    selectedTorre?.label ? `${isApartments ? 'Torre' : 'Manzana'} ${selectedTorre.label}` : null,
+    selectedLevel?.name,
+    selectedModel?.name,
+  ].filter(Boolean).join(' / ');
+
+  const case2WhatsappPayload: Case2WhatsappPayload = {
+    phone: interestedPerson.phone.trim(),
+    name: `${interestedPerson.firstName} ${interestedPerson.lastName}`.trim() || 'Cliente demo',
+    reservationId,
+    selectedUnit: selectedUnitSummary || 'Unidad demo pendiente',
+    referencePrice: selectedModel?.price ?? 'Precio demo pendiente',
+    // Pendiente de certificacion futura; dato secundario de la plantilla, no centro del flujo.
+    martaLink: CASE2_DEMO_MARTA_LINK,
+    // Pendiente de fuente oficial; valor demo temporal centralizado.
+    salesContact: CASE2_DEMO_SALES_CONTACT,
+  };
 
   const navigateTo = (newScreen: Screen, newStep: number) => {
     setScreen(newScreen);
@@ -221,6 +258,52 @@ const App: React.FC = () => {
     }
   };
 
+  const simulateCase2WhatsappSend = () => {
+    if (case2SendStatus === 'sending') return;
+    if (case2SendStatus === 'receipt_confirmed') return;
+    if ((case2SendStatus === 'error' || case2SendStatus === 'provider_accepted') && case2RetryCount >= CASE2_MAX_RETRIES) return;
+
+    const conceptualPayload = case2WhatsappPayload;
+    const isRetry = case2SendStatus === 'error' || case2SendStatus === 'provider_accepted';
+
+    setCase2SendStatus('sending');
+    if (isRetry) {
+      setCase2RetryCount((current) => current + 1);
+    }
+
+    trackPostReservationEvent('case2_whatsapp_simulated_send_started', {
+      simulated: true,
+      no_real_whatsapp_sent: true,
+      template: 'h_operia_reservation_summary',
+      reservation_id: conceptualPayload.reservationId,
+      selected_unit: conceptualPayload.selectedUnit,
+      marta_link_status: 'demo_placeholder_pending_certification',
+      sales_contact_status: 'demo_value_pending_official_source',
+      retry_count: isRetry ? case2RetryCount + 1 : case2RetryCount,
+    });
+
+    window.setTimeout(() => {
+      setCase2SendStatus('provider_accepted');
+      trackPostReservationEvent('case2_whatsapp_simulated_provider_accepted', {
+        simulated: true,
+        no_real_whatsapp_sent: true,
+        provider_accepted_is_not_delivery_confirmation: true,
+        template: 'h_operia_reservation_summary',
+        reservation_id: conceptualPayload.reservationId,
+      });
+    }, 700);
+  };
+
+  const confirmCase2WhatsappReceipt = () => {
+    setCase2SendStatus('receipt_confirmed');
+    setPostReservationStatus((current) => ({ ...current, whatsappReceiptConfirmed: true }));
+    trackPostReservationEvent('case2_whatsapp_receipt_confirmed_by_user', {
+      simulated: true,
+      no_real_whatsapp_sent: true,
+      reservation_id: case2WhatsappPayload.reservationId,
+    });
+  };
+
   const handleLogout = () => {
     // Reset all states
     setStep(1);
@@ -237,6 +320,8 @@ const App: React.FC = () => {
     setAnalysisResult(null);
     setPostReservationStatus(initialPostReservationStatus);
     setAccompanimentSelections([]);
+    setCase2SendStatus('idle');
+    setCase2RetryCount(0);
     martaScheduleDraftOpen.current = false;
     window.scrollTo(0, 0);
   };
@@ -2546,13 +2631,134 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
             Marta es un único agente multicanal. El enlace permanente formará parte del mensaje final para que puedas retomar tu espacio privado sin cambiar el expediente.
           </p>
         </section>
+
+        <section className="bg-white p-8 rounded-[2rem] border border-accent/10 shadow-sm">
+          <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Confirmación WhatsApp Caso 2</span>
+          <h3 className="text-xl font-black text-primary uppercase tracking-tight mb-4">Confirmación de cierre</h3>
+          <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
+            Antes de finalizar, preparamos la confirmación WhatsApp de tu recorrido. Esta versión solo simula el estado visual: no envía WhatsApp real ni llama al backend.
+          </p>
+
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+              <p className="text-[11px] font-black text-primary uppercase tracking-widest mb-2">Resumen que se preparará</p>
+              <div className="space-y-2">
+                <p className="text-[13px] font-bold text-primary/80 leading-snug">Cliente: {case2WhatsappPayload.name}</p>
+                <p className="text-[13px] font-bold text-primary/80 leading-snug">Reserva: {case2WhatsappPayload.reservationId}</p>
+                <p className="text-[13px] font-bold text-primary/80 leading-snug">Unidad: {case2WhatsappPayload.selectedUnit}</p>
+                <p className="text-[13px] font-bold text-primary/80 leading-snug">Precio de referencia: {case2WhatsappPayload.referencePrice}</p>
+              </div>
+            </div>
+
+            {case2SendStatus === 'idle' && (
+              <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                <p className="text-[13px] font-black text-accent leading-snug">
+                  Estamos listos para preparar tu confirmación por WhatsApp.
+                </p>
+              </div>
+            )}
+
+            {case2SendStatus === 'sending' && (
+              <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                <p className="text-[13px] font-black text-accent leading-snug flex items-center gap-3">
+                  <RefreshCw className="w-4 h-4 animate-spin shrink-0" /> Estamos preparando tu confirmación por WhatsApp...
+                </p>
+              </div>
+            )}
+
+            {case2SendStatus === 'provider_accepted' && (
+              <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <p className="text-[13px] font-black text-primary leading-snug mb-3">
+                  Tu confirmación fue aceptada por el proveedor de WhatsApp.
+                </p>
+                <p className="text-[12px] font-bold text-secondary/70 leading-snug">
+                  Esto no significa entrega final al cliente. Por eso necesitamos que confirmes si ya recibiste tu mensaje.
+                </p>
+              </div>
+            )}
+
+            {case2SendStatus === 'error' && (
+              <div className="p-4 rounded-2xl bg-red-50 border border-red-100">
+                <p className="text-[13px] font-black text-red-700 leading-snug">
+                  No pudimos preparar la confirmación en este momento.
+                </p>
+                <p className="text-[12px] font-bold text-red-700/70 leading-snug mt-2">
+                  Puedes intentar una vez más de forma controlada o finalizar la experiencia para seguimiento humano.
+                </p>
+              </div>
+            )}
+
+            {case2SendStatus === 'receipt_confirmed' && (
+              <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                <p className="text-[13px] font-black text-accent leading-snug">
+                  Recepción confirmada. El expediente demo queda conceptualmente nacido y consolidado para seguimiento.
+                </p>
+              </div>
+            )}
+
+            {case2SendStatus === 'provider_accepted' && (
+              <label className="flex items-start gap-4 p-5 rounded-2xl bg-white border border-primary/10 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={false}
+                  onChange={confirmCase2WhatsappReceipt}
+                  className="mt-1 w-5 h-5 accent-[var(--brand-accent)]"
+                />
+                <span className="text-[13px] font-black text-primary leading-snug">
+                  Confirmo que ya recibí el WhatsApp.
+                </span>
+              </label>
+            )}
+
+            {case2SendStatus === 'provider_accepted' && case2RetryCount < CASE2_MAX_RETRIES && (
+              <button
+                onClick={simulateCase2WhatsappSend}
+                className="w-full py-4 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
+              >
+                Reenviar confirmación
+              </button>
+            )}
+
+            {case2SendStatus === 'provider_accepted' && case2RetryCount >= CASE2_MAX_RETRIES && (
+              <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <p className="text-[13px] font-black text-primary leading-snug">
+                  Puedes finalizar la experiencia sin confirmar recepción. El seguimiento humano podrá validar el mensaje posteriormente.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3 mt-6">
+            {(case2SendStatus === 'idle' || case2SendStatus === 'error') && (
+              <button
+                onClick={simulateCase2WhatsappSend}
+                disabled={case2SendStatus === 'error' && case2RetryCount >= CASE2_MAX_RETRIES}
+                className="w-full py-5 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
+              >
+                {case2SendStatus === 'error' ? 'Reenviar confirmación' : 'Preparar confirmación WhatsApp'}
+              </button>
+            )}
+
+            {case2SendStatus === 'sending' && (
+              <button
+                disabled
+                className="w-full py-5 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg opacity-50"
+              >
+                Preparando confirmación...
+              </button>
+            )}
+          </div>
+        </section>
       </div>
 
       <button
         onClick={handleLogout}
-        className="w-full py-6 mt-10 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
+        disabled={case2SendStatus === 'idle' || case2SendStatus === 'sending' || (case2SendStatus === 'provider_accepted' && case2RetryCount < CASE2_MAX_RETRIES)}
+        className="w-full py-6 mt-10 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
       >
-        Finalizar recorrido
+        {case2SendStatus === 'provider_accepted' && case2RetryCount >= CASE2_MAX_RETRIES
+          ? 'Finalizar experiencia con seguimiento humano'
+          : 'Finalizar experiencia'}
       </button>
     </motion.div>
   );
