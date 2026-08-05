@@ -82,6 +82,62 @@ type PostReservationStatus = {
   projectVisitPreference: ProjectVisitPreference;
 };
 
+type ReservationTransmissionStatus =
+  | "idle"
+  | "sent"
+  | "no_admin"
+  | "error";
+
+type AdminLiveDemoResetRequest = {
+  type: "hoperia.demo.live.reset";
+  schemaVersion: "1.0";
+  resetId: string;
+  requestedAt: string;
+  sourceApplication: "hoperia_admin_demo";
+};
+
+type PublicLiveDemoResetAck = {
+  type: "hoperia.demo.live.reset.ack";
+  schemaVersion: "1.0";
+  resetId: string;
+  acknowledgedAt: string;
+  sourceApplication: "hoperia_public_reservation_app";
+  status: "reset_complete";
+};
+
+type ReservationCompletedEvent = {
+  type: "hoperia.reservation.completed";
+  schemaVersion: "1.0";
+  eventId: string;
+  occurredAt: string;
+  sourceApplication: "hoperia_public_reservation_app";
+  sourceOrigin: string;
+  reservationId: string;
+  reservationSessionId?: string;
+  client: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    dui?: string;
+  };
+  project: {
+    name: string;
+  };
+  selectedUnit: {
+    propertyType: string;
+    sector?: string;
+    towerOrBlock?: string;
+    level?: string;
+    model?: string;
+    unitOrLot: string;
+    sourceUnitId?: string;
+  };
+  sourceChannel: "public_web_app";
+  reservationStatus: "completed";
+  isDemo: true;
+};
+
 const initialPostReservationStatus: PostReservationStatus = {
   instructionsAcknowledged: false,
   martaContactPreference: null,
@@ -102,45 +158,22 @@ const CASE2_MAX_RETRIES = 1;
 const CASE2_DEMO_MARTA_LINK = 'https://reservas.automatizahoy.ai/marta-demo-pendiente';
 const CASE2_DEMO_SALES_CONTACT = '+503 0000-0000';
 
+const configuredAdminOrigin =
+  import.meta.env.VITE_ADMIN_ORIGIN?.trim() || "http://localhost:3000";
+
+const legacyReservationSessionStorageKey = "amena_reservation_session_id";
+const reservationSessionStorageKey = "hoperia_reservation_session_id";
+
 const App: React.FC = () => {
   const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
   const hasStartedReservationSession = React.useRef(false);
+  const reservationSessionGenerationRef = React.useRef(0);
   const martaScheduleDraftOpen = React.useRef(false);
 
   React.useEffect(() => {
     document.documentElement.style.setProperty('--brand-primary', projectBranding.primaryColor);
     document.documentElement.style.setProperty('--brand-secondary', projectBranding.secondaryColor);
     document.documentElement.style.setProperty('--brand-accent', projectBranding.accentColor);
-  }, []);
-
-  React.useEffect(() => {
-    const existingSessionId = sessionStorage.getItem('amena_reservation_session_id');
-
-    if (existingSessionId) {
-      setReservationSessionId(existingSessionId);
-      return;
-    }
-
-    if (hasStartedReservationSession.current) {
-      return;
-    }
-
-    hasStartedReservationSession.current = true;
-
-    async function createInitialReservationSession() {
-      const result = await startReservationSession({
-        source: 'amena_public_reservation_app',
-        deviceType: 'desktop',
-        landingPath: window.location.pathname,
-      });
-
-      if (result.ok && result.data?.id) {
-        sessionStorage.setItem('amena_reservation_session_id', result.data.id);
-        setReservationSessionId(result.data.id);
-      }
-    }
-
-    createInitialReservationSession();
   }, []);
 
   const [step, setStep] = useState(1);
@@ -167,17 +200,27 @@ const App: React.FC = () => {
   const [accompanimentSelections, setAccompanimentSelections] = useState<AccompanimentSelection[]>([]);
   const [case2SendStatus, setCase2SendStatus] = useState<Case2SendStatus>('idle');
   const [case2RetryCount, setCase2RetryCount] = useState(0);
+  const reservationCompletedEventRef = React.useRef<ReservationCompletedEvent | null>(null);
+  const reservationSnapshotSignatureRef = React.useRef<string | null>(null);
+  const transmittedReservationEventIdRef = React.useRef<string | null>(null);
+  const processedResetIdsRef = React.useRef<Set<string>>(new Set());
+  const processingResetIdsRef = React.useRef<Set<string>>(new Set());
+  const [completedReservationId, setCompletedReservationId] = useState<string | null>(null);
+  const [showReservationConfirmation, setShowReservationConfirmation] = useState(false);
+  const [reservationValidationError, setReservationValidationError] = useState<string | null>(null);
+  const [reservationTransmissionStatus, setReservationTransmissionStatus] = useState<ReservationTransmissionStatus>("idle");
+  const [reservationTransmissionError, setReservationTransmissionError] = useState<string | null>(null);
 
   const totalSteps = 15;
   const isApartments = selectedType === 'apartamentos';
-  const reservationId = selectedUnit?.id ? `DN-${selectedUnit.id.toUpperCase()}` : 'DN-RESERVA-DEMO';
+  const displayedReservationId = completedReservationId ?? 'Pendiente de confirmación';
   const reservationSummaryItems = [
     { label: 'Proyecto', value: projectBranding.projectName },
     { label: isApartments ? 'Torre' : 'Manzana', value: selectedTorre?.label },
     ...(isApartments ? [{ label: 'Nivel', value: selectedLevel?.name }] : []),
     { label: 'Modelo', value: selectedModel?.name },
     { label: isApartments ? 'Unidad' : 'Lote', value: selectedUnit?.label },
-    { label: 'Reservation ID', value: reservationId },
+    { label: 'Reservation ID', value: displayedReservationId },
   ].filter((item) => Boolean(item.value));
 
   const selectedUnitSummary = [
@@ -191,7 +234,7 @@ const App: React.FC = () => {
   const case2WhatsappPayload: Case2WhatsappPayload = {
     phone: interestedPerson.phone.trim(),
     name: `${interestedPerson.firstName} ${interestedPerson.lastName}`.trim() || 'Cliente demo',
-    reservationId,
+    reservationId: displayedReservationId,
     selectedUnit: selectedUnitSummary || 'Unidad demo pendiente',
     referencePrice: selectedModel?.price ?? 'Precio demo pendiente',
     // Pendiente de certificacion futura; dato secundario de la plantilla, no centro del flujo.
@@ -199,6 +242,54 @@ const App: React.FC = () => {
     // Pendiente de fuente oficial; valor demo temporal centralizado.
     salesContact: CASE2_DEMO_SALES_CONTACT,
   };
+
+  const createReservationSession = async (generation: number) => {
+    const fallbackSessionId = `hoperia-local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+    try {
+      const result = await startReservationSession({
+        source: 'amena_public_reservation_app',
+        deviceType: 'desktop',
+        landingPath: window.location.pathname,
+      });
+
+      if (generation !== reservationSessionGenerationRef.current) {
+        return null;
+      }
+
+      const nextSessionId = result.ok && result.data?.id ? result.data.id : fallbackSessionId;
+      sessionStorage.setItem(reservationSessionStorageKey, nextSessionId);
+      setReservationSessionId(nextSessionId);
+      return nextSessionId;
+    } catch {
+      if (generation !== reservationSessionGenerationRef.current) {
+        return null;
+      }
+
+      sessionStorage.setItem(reservationSessionStorageKey, fallbackSessionId);
+      setReservationSessionId(fallbackSessionId);
+      return fallbackSessionId;
+    }
+  };
+
+  React.useEffect(() => {
+    const existingSessionId =
+      sessionStorage.getItem(reservationSessionStorageKey) ||
+      sessionStorage.getItem(legacyReservationSessionStorageKey);
+
+    if (existingSessionId) {
+      sessionStorage.setItem(reservationSessionStorageKey, existingSessionId);
+      setReservationSessionId(existingSessionId);
+      return;
+    }
+
+    if (hasStartedReservationSession.current) {
+      return;
+    }
+
+    hasStartedReservationSession.current = true;
+    createReservationSession(reservationSessionGenerationRef.current);
+  }, []);
 
   const navigateTo = (newScreen: Screen, newStep: number) => {
     setScreen(newScreen);
@@ -304,6 +395,342 @@ const App: React.FC = () => {
     });
   };
 
+  const createEventId = () => {
+    const randomUUID = window.crypto?.randomUUID?.bind(window.crypto);
+    return randomUUID ? randomUUID() : `evt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  };
+
+  const normalizeReservationSegment = (value?: string | null) => {
+    const normalized = value?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(-8);
+    return normalized || 'LOCAL';
+  };
+
+  const createReservationId = () => (
+    `HOP-RES-${normalizeReservationSegment(reservationSessionId)}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+  );
+
+  const buildReservationSnapshotSignature = () => JSON.stringify([
+    interestedPerson.firstName.trim(),
+    interestedPerson.lastName.trim(),
+    interestedPerson.email.trim(),
+    interestedPerson.phone.trim(),
+    interestedPerson.dui.trim(),
+    projectBranding.projectName.trim(),
+    selectedType ?? '',
+    selectedSector?.id ?? '',
+    selectedSector?.name ?? '',
+    selectedTorre?.id ?? '',
+    selectedTorre?.label ?? '',
+    selectedLevel?.id ?? '',
+    selectedLevel?.name ?? '',
+    selectedModel?.id ?? '',
+    selectedModel?.name ?? '',
+    selectedUnit?.id ?? '',
+    selectedUnit?.label ?? '',
+    reservationSessionId ?? '',
+  ]);
+
+  React.useEffect(() => {
+    if (!reservationCompletedEventRef.current || !reservationSnapshotSignatureRef.current) {
+      return;
+    }
+
+    const currentSignature = buildReservationSnapshotSignature();
+
+    if (currentSignature === reservationSnapshotSignatureRef.current) {
+      return;
+    }
+
+    reservationCompletedEventRef.current = null;
+    reservationSnapshotSignatureRef.current = null;
+    transmittedReservationEventIdRef.current = null;
+    setCompletedReservationId(null);
+    setShowReservationConfirmation(false);
+    setReservationValidationError(null);
+    setReservationTransmissionStatus("idle");
+    setReservationTransmissionError(null);
+  }, [
+    interestedPerson.firstName,
+    interestedPerson.lastName,
+    interestedPerson.email,
+    interestedPerson.phone,
+    interestedPerson.dui,
+    projectBranding.projectName,
+    selectedType,
+    selectedSector?.id,
+    selectedSector?.name,
+    selectedTorre?.id,
+    selectedTorre?.label,
+    selectedLevel?.id,
+    selectedLevel?.name,
+    selectedModel?.id,
+    selectedModel?.name,
+    selectedUnit?.id,
+    selectedUnit?.label,
+    reservationSessionId,
+  ]);
+
+  const getMissingReservationFields = () => {
+    const missingFields: string[] = [];
+
+    if (!interestedPerson.firstName.trim()) missingFields.push('nombre');
+    if (!interestedPerson.lastName.trim()) missingFields.push('apellido');
+    if (!interestedPerson.email.trim()) missingFields.push('correo');
+    if (!interestedPerson.phone.trim()) missingFields.push('teléfono');
+    if (!projectBranding.projectName.trim()) missingFields.push('proyecto');
+    if (!selectedType) missingFields.push('tipo de propiedad');
+    if (!selectedUnit?.label?.trim()) missingFields.push(isApartments ? 'unidad' : 'lote');
+
+    return missingFields;
+  };
+
+  const getOrCreateReservationCompletedEvent = () => {
+    const currentSignature = buildReservationSnapshotSignature();
+
+    if (
+      reservationCompletedEventRef.current &&
+      reservationSnapshotSignatureRef.current === currentSignature
+    ) {
+      return { event: reservationCompletedEventRef.current, created: false };
+    }
+
+    if (reservationCompletedEventRef.current) {
+      reservationCompletedEventRef.current = null;
+      reservationSnapshotSignatureRef.current = null;
+      transmittedReservationEventIdRef.current = null;
+      setReservationTransmissionStatus("idle");
+      setReservationTransmissionError(null);
+    }
+
+    const missingFields = getMissingReservationFields();
+
+    if (missingFields.length > 0) {
+      return { event: null, created: false, missingFields };
+    }
+
+    const clientDui = interestedPerson.dui.trim();
+    const event: ReservationCompletedEvent = {
+      type: "hoperia.reservation.completed",
+      schemaVersion: "1.0",
+      eventId: createEventId(),
+      occurredAt: new Date().toISOString(),
+      sourceApplication: "hoperia_public_reservation_app",
+      sourceOrigin: window.location.origin,
+      reservationId: createReservationId(),
+      ...(reservationSessionId ? { reservationSessionId } : {}),
+      client: {
+        firstName: interestedPerson.firstName.trim(),
+        lastName: interestedPerson.lastName.trim(),
+        email: interestedPerson.email.trim(),
+        phone: interestedPerson.phone.trim(),
+        ...(clientDui ? { dui: clientDui } : {}),
+      },
+      project: {
+        name: projectBranding.projectName,
+      },
+      selectedUnit: {
+        propertyType: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+        ...(selectedSector?.name ? { sector: selectedSector.name } : {}),
+        ...(selectedTorre?.label ? { towerOrBlock: selectedTorre.label } : {}),
+        ...(selectedLevel?.name ? { level: selectedLevel.name } : {}),
+        ...(selectedModel?.name ? { model: selectedModel.name } : {}),
+        unitOrLot: selectedUnit?.label ?? '',
+        ...(selectedUnit?.id ? { sourceUnitId: selectedUnit.id } : {}),
+      },
+      sourceChannel: "public_web_app",
+      reservationStatus: "completed",
+      isDemo: true,
+    };
+
+    reservationCompletedEventRef.current = event;
+    reservationSnapshotSignatureRef.current = currentSignature;
+    setCompletedReservationId(event.reservationId);
+
+    return { event, created: true };
+  };
+
+  const sendReservationCompletedEvent = (event: ReservationCompletedEvent) => {
+    if (transmittedReservationEventIdRef.current === event.eventId) {
+      setReservationTransmissionStatus("sent");
+      return;
+    }
+
+    if (!window.opener || window.opener.closed) {
+      setReservationTransmissionStatus("no_admin");
+      setReservationTransmissionError("La App Pública debe abrirse desde el Centro Demo para transmitir la reserva.");
+      return;
+    }
+
+    try {
+      window.opener.postMessage(event, configuredAdminOrigin);
+      transmittedReservationEventIdRef.current = event.eventId;
+      setReservationTransmissionStatus("sent");
+      setReservationTransmissionError(null);
+    } catch (error) {
+      setReservationTransmissionStatus("error");
+      setReservationTransmissionError(error instanceof Error ? error.message : "Error local al emitir el evento.");
+    }
+  };
+
+  const isAdminLiveDemoResetRequest = (data: unknown): data is AdminLiveDemoResetRequest => (
+    typeof data === 'object' &&
+    data !== null &&
+    !Array.isArray(data) &&
+    (data as Partial<AdminLiveDemoResetRequest>).type === "hoperia.demo.live.reset" &&
+    (data as Partial<AdminLiveDemoResetRequest>).schemaVersion === "1.0" &&
+    typeof (data as Partial<AdminLiveDemoResetRequest>).resetId === 'string' &&
+    Boolean((data as Partial<AdminLiveDemoResetRequest>).resetId?.trim()) &&
+    typeof (data as Partial<AdminLiveDemoResetRequest>).requestedAt === 'string' &&
+    Boolean((data as Partial<AdminLiveDemoResetRequest>).requestedAt?.trim()) &&
+    (data as Partial<AdminLiveDemoResetRequest>).sourceApplication === "hoperia_admin_demo"
+  );
+
+  const sendLiveDemoResetAck = (resetId: string) => {
+    if (!window.opener || window.opener.closed) {
+      return;
+    }
+
+    const ack: PublicLiveDemoResetAck = {
+      type: "hoperia.demo.live.reset.ack",
+      schemaVersion: "1.0",
+      resetId,
+      acknowledgedAt: new Date().toISOString(),
+      sourceApplication: "hoperia_public_reservation_app",
+      status: "reset_complete",
+    };
+
+    window.opener.postMessage(ack, configuredAdminOrigin);
+  };
+
+  const resetLiveDemoState = async () => {
+    reservationSessionGenerationRef.current += 1;
+    const nextGeneration = reservationSessionGenerationRef.current;
+
+    sessionStorage.removeItem(legacyReservationSessionStorageKey);
+    sessionStorage.removeItem(reservationSessionStorageKey);
+
+    setReservationSessionId(null);
+    setStep(1);
+    setScreen('welcome');
+    setAcceptedTerms(false);
+    setIsTermsModalOpen(false);
+    setInterestedPerson(initialInterestedPerson);
+    setSelectedType(null);
+    setSelectedSector(null);
+    setSelectedTorre(null);
+    setSelectedLevel(null);
+    setSelectedModel(null);
+    setSelectedUnit(null);
+    setIsPlanModalOpen(false);
+    setIsMasterPlanOpen(false);
+    setIsSectorMapOpen(false);
+    setIsManzanasModalOpen(false);
+    setIsLotesModalOpen(false);
+    setIsModelDetailOpen(false);
+    setIsModelGalleryOpen(false);
+    setInspectingModel(null);
+    setAnalysisResult(null);
+    setPostReservationStatus(initialPostReservationStatus);
+    setAccompanimentSelections([]);
+    reservationCompletedEventRef.current = null;
+    reservationSnapshotSignatureRef.current = null;
+    transmittedReservationEventIdRef.current = null;
+    setCompletedReservationId(null);
+    setShowReservationConfirmation(false);
+    setReservationValidationError(null);
+    setReservationTransmissionStatus("idle");
+    setReservationTransmissionError(null);
+    martaScheduleDraftOpen.current = false;
+    window.scrollTo(0, 0);
+
+    await createReservationSession(nextGeneration);
+  };
+
+  React.useEffect(() => {
+    const handleLiveDemoResetMessage = async (event: MessageEvent) => {
+      if (event.origin !== configuredAdminOrigin) {
+        return;
+      }
+
+      if (event.source !== window.opener) {
+        return;
+      }
+
+      const { data } = event;
+
+      if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+        return;
+      }
+
+      if ((data as { type?: unknown }).type !== "hoperia.demo.live.reset") {
+        return;
+      }
+
+      if (!isAdminLiveDemoResetRequest(data)) {
+        return;
+      }
+
+      if (processedResetIdsRef.current.has(data.resetId)) {
+        sendLiveDemoResetAck(data.resetId);
+        return;
+      }
+
+      if (processingResetIdsRef.current.has(data.resetId)) {
+        return;
+      }
+
+      processingResetIdsRef.current.add(data.resetId);
+
+      try {
+        await resetLiveDemoState();
+        processedResetIdsRef.current.add(data.resetId);
+        sendLiveDemoResetAck(data.resetId);
+      } finally {
+        processingResetIdsRef.current.delete(data.resetId);
+      }
+    };
+
+    window.addEventListener('message', handleLiveDemoResetMessage);
+
+    return () => {
+      window.removeEventListener('message', handleLiveDemoResetMessage);
+    };
+  }, []);
+
+  const confirmReservation = () => {
+    const result = getOrCreateReservationCompletedEvent();
+
+    if (!result.event) {
+      setShowReservationConfirmation(false);
+      setReservationValidationError(`Antes de confirmar la reserva faltan estos datos: ${result.missingFields?.join(', ')}.`);
+      return;
+    }
+
+    setCompletedReservationId(result.event.reservationId);
+    setReservationValidationError(null);
+    setShowReservationConfirmation(true);
+    sendReservationCompletedEvent(result.event);
+
+    if (result.created) {
+      trackSelection('confirmation', result.event.selectedUnit.sourceUnitId ?? 'sin_unidad', {
+        label: selectedUnit?.label,
+        display: selectedUnit?.label,
+        property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+        sector: selectedSector?.id,
+        tower_or_block: selectedTorre?.id,
+        level: selectedLevel?.id,
+        model: selectedModel?.id,
+        selection_type: isApartments ? 'unidad' : 'lote',
+        action: 'confirmar_reserva',
+        reservation_id: result.event.reservationId,
+        event_id: result.event.eventId,
+      });
+    }
+
+    setPostReservationStatus(initialPostReservationStatus);
+    navigateTo('next_steps_instructions', 10);
+  };
+
   const handleLogout = () => {
     // Reset all states
     setStep(1);
@@ -322,6 +749,14 @@ const App: React.FC = () => {
     setAccompanimentSelections([]);
     setCase2SendStatus('idle');
     setCase2RetryCount(0);
+    reservationCompletedEventRef.current = null;
+    reservationSnapshotSignatureRef.current = null;
+    transmittedReservationEventIdRef.current = null;
+    setCompletedReservationId(null);
+    setShowReservationConfirmation(false);
+    setReservationValidationError(null);
+    setReservationTransmissionStatus("idle");
+    setReservationTransmissionError(null);
     martaScheduleDraftOpen.current = false;
     window.scrollTo(0, 0);
   };
@@ -436,7 +871,7 @@ const App: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-[9px] font-black uppercase tracking-widest text-accent">Reserva activa</p>
-          <p className="text-[15px] font-black uppercase tracking-tight text-primary">{reservationId}</p>
+          <p className="text-[15px] font-black uppercase tracking-tight text-primary break-words">{displayedReservationId}</p>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-black uppercase tracking-tight text-primary/70">
           {reservationSummaryItems.map((item) => (
@@ -448,6 +883,64 @@ const App: React.FC = () => {
       </div>
     </section>
   );
+
+  const ReservationLocalConfirmationCard = () => {
+    const event = reservationCompletedEventRef.current;
+
+    if (!event || !showReservationConfirmation) {
+      return null;
+    }
+
+    const transmissionCopy: Record<ReservationTransmissionStatus, { status: string; message: string }> = {
+      idle: {
+        status: "Confirmación local preparada",
+        message: "La reserva fue creada dentro de esta sesión demostrativa.",
+      },
+      sent: {
+        status: "Evento emitido hacia el Centro Demo",
+        message: "La recepción será verificada por el Centro Demo.",
+      },
+      no_admin: {
+        status: "Centro Demo no conectado",
+        message: "Abre esta App Pública desde el Centro Demo para transmitir la reserva.",
+      },
+      error: {
+        status: "No fue posible emitir el evento",
+        message: "La reserva permanece disponible localmente en esta sesión demostrativa.",
+      },
+    };
+
+    const currentTransmissionCopy = transmissionCopy[reservationTransmissionStatus];
+
+    return (
+      <section className="rounded-[1.75rem] border border-primary/15 bg-white p-6 shadow-sm text-primary leading-7">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-black uppercase tracking-tight">Reserva de demostración confirmada</h3>
+          <span className="rounded-full bg-accent/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-primary">
+            Demo · No persistido
+          </span>
+        </div>
+        <div className="space-y-3 text-base font-semibold">
+          <p>
+            <span className="block text-sm font-black uppercase tracking-widest text-primary/60">Reservation ID:</span>
+            <span className="font-bold break-words">{event.reservationId}</span>
+          </p>
+          <p>
+            <span className="block text-sm font-black uppercase tracking-widest text-primary/60">Estado:</span>
+            {currentTransmissionCopy.status}
+          </p>
+          <p>
+            {currentTransmissionCopy.message}
+          </p>
+          {reservationTransmissionStatus === "error" && reservationTransmissionError && (
+            <p className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold leading-6 text-red-950">
+              Detalle técnico: {reservationTransmissionError}
+            </p>
+          )}
+        </div>
+      </section>
+    );
+  };
 
   const ImageModal = ({ isOpen, onClose, title, imageUrl, message }: { isOpen: boolean, onClose: () => void, title: string, imageUrl?: string, message?: string }) => (
     <AnimatePresence>
@@ -1594,28 +2087,22 @@ const UnitSelectionScreen = () => {
         </div>
 
         <div className="space-y-6">
+          {reservationValidationError && (
+            <div className="rounded-[1.5rem] border border-red-200 bg-red-50 p-5 text-base font-semibold leading-7 text-red-950">
+              {reservationValidationError}
+            </div>
+          )}
+
+          <ReservationLocalConfirmationCard />
+
           <div className="text-center mb-4">
             <p className="text-sm font-bold text-secondary uppercase tracking-widest opacity-80 italic">Al confirmar, registraremos esta selección dentro del escenario demostrativo.</p>
           </div>
           <button 
-            onClick={() => {
-              trackSelection('confirmation', selectedUnit?.id ?? 'sin_unidad', {
-                label: selectedUnit?.label,
-                display: selectedUnit?.label,
-                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
-                sector: selectedSector?.id,
-                tower_or_block: selectedTorre?.id,
-                level: selectedLevel?.id,
-                model: selectedModel?.id,
-                selection_type: isApartments ? 'unidad' : 'lote',
-                action: 'confirmar_seleccion'
-              });
-              setPostReservationStatus(initialPostReservationStatus);
-              navigateTo('next_steps_instructions', 10);
-            }}
+            onClick={confirmReservation}
             className={`w-full py-8 rounded-[2rem] ${accentBg} text-white font-black uppercase text-xl tracking-widest shadow-2xl active:scale-95 transition-transform`}
           >
-            CONFIRMAR SELECCIÓN
+            CONFIRMAR RESERVA
           </button>
         </div>
       </motion.div>
@@ -1686,6 +2173,7 @@ const UnitSelectionScreen = () => {
       <BackButton />
       <PostReservationStepBadge current={2} />
       <ReservationContinuityBadge />
+      <ReservationLocalConfirmationCard />
       <h2 className="text-[32px] font-black text-accent leading-[1.1] mb-4 tracking-tight uppercase">
         Instrucciones post-reserva
       </h2>
