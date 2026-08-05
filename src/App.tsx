@@ -71,6 +71,42 @@ type PostReservationStatus = {
   projectVisitPreference: ProjectVisitPreference;
 };
 
+type ReservationCompletedEvent = {
+  type: "hoperia.reservation.completed";
+  schemaVersion: "1.0";
+  eventId: string;
+  occurredAt: string;
+  sourceApplication: "amena_public_reservation_app";
+  sourceOrigin: string;
+  reservationId: string;
+  reservationSessionId?: string;
+  client: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    dui?: string;
+  };
+  project: {
+    id?: string;
+    name: string;
+  };
+  selectedUnit: {
+    propertyType: string;
+    sector?: string;
+    towerOrBlock?: string;
+    level?: string;
+    model?: string;
+    unitOrLot: string;
+    sourceUnitId?: string;
+  };
+  sourceChannel: "public_web_app";
+  reservationStatus: "completed";
+  isDemo: true;
+};
+
+type ReservationTransmissionStatus = "idle" | "sent" | "no_admin" | "error";
+
 const initialPostReservationStatus: PostReservationStatus = {
   instructionsAcknowledged: false,
   martaContactPreference: null,
@@ -89,8 +125,12 @@ const initialInterestedPerson = {
 
 const App: React.FC = () => {
   const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
+  const [completedReservationId, setCompletedReservationId] = useState<string | null>(null);
+  const [reservationTransmissionStatus, setReservationTransmissionStatus] = useState<ReservationTransmissionStatus>("idle");
+  const [reservationTransmissionError, setReservationTransmissionError] = useState<string | null>(null);
   const hasStartedReservationSession = React.useRef(false);
   const martaScheduleDraftOpen = React.useRef(false);
+  const reservationCompletedEventRef = React.useRef<ReservationCompletedEvent | null>(null);
 
   React.useEffect(() => {
     document.documentElement.style.setProperty('--brand-primary', projectBranding.primaryColor);
@@ -153,7 +193,8 @@ const App: React.FC = () => {
 
   const totalSteps = 15;
   const isApartments = selectedType === 'apartamentos';
-  const reservationId = selectedUnit?.id ? `AMENA-${selectedUnit.id.toUpperCase()}` : 'AMENA-RESERVA-DEMO';
+  const reservationId = completedReservationId || 'AMENA-RESERVA-PENDIENTE';
+  const configuredAdminOrigin = (import.meta.env as unknown as { VITE_ADMIN_ORIGIN?: string }).VITE_ADMIN_ORIGIN?.trim() || 'http://localhost:3000';
   const reservationSummaryItems = [
     { label: 'Proyecto', value: projectBranding.projectName },
     { label: isApartments ? 'Torre' : 'Manzana', value: selectedTorre?.label },
@@ -221,6 +262,114 @@ const App: React.FC = () => {
     }
   };
 
+  const normalizeReservationIdSegment = (value: string) =>
+    value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "SESSION";
+
+  const createStableReservationSuffix = () => {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase();
+    }
+    return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
+  };
+
+  const buildReservationCompletedEvent = (): ReservationCompletedEvent | null => {
+    if (reservationCompletedEventRef.current) {
+      return reservationCompletedEventRef.current;
+    }
+
+    const missingFields = [
+      !interestedPerson.firstName.trim() && "nombre",
+      !interestedPerson.lastName.trim() && "apellido",
+      !interestedPerson.email.trim() && "correo",
+      !interestedPerson.phone.trim() && "teléfono",
+      !projectBranding.projectName.trim() && "proyecto",
+      !selectedType && "tipo de propiedad",
+      !selectedUnit?.id && "unidad o lote",
+    ].filter(Boolean);
+
+    if (missingFields.length > 0) {
+      alert(`Completa los datos mínimos de la reserva: ${missingFields.join(", ")}.`);
+      return null;
+    }
+
+    const sessionSegment = normalizeReservationIdSegment(reservationSessionId || "session-pending");
+    const nextReservationId = `AMENA-RES-${sessionSegment}-${createStableReservationSuffix()}`;
+    const nextEvent: ReservationCompletedEvent = {
+      type: "hoperia.reservation.completed",
+      schemaVersion: "1.0",
+      eventId: typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `evt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      occurredAt: new Date().toISOString(),
+      sourceApplication: "amena_public_reservation_app",
+      sourceOrigin: window.location.origin,
+      reservationId: nextReservationId,
+      reservationSessionId: reservationSessionId || undefined,
+      client: {
+        firstName: interestedPerson.firstName.trim(),
+        lastName: interestedPerson.lastName.trim(),
+        email: interestedPerson.email.trim(),
+        phone: interestedPerson.phone.trim(),
+        dui: interestedPerson.dui.trim() || undefined,
+      },
+      project: {
+        name: projectBranding.projectName,
+      },
+      selectedUnit: {
+        propertyType: selectedType === "apartamentos" ? "apartamento" : "casa",
+        sector: selectedSector?.name,
+        towerOrBlock: selectedTorre?.label,
+        level: selectedLevel?.name,
+        model: selectedModel?.name,
+        unitOrLot: selectedUnit.label,
+        sourceUnitId: selectedUnit.id,
+      },
+      sourceChannel: "public_web_app",
+      reservationStatus: "completed",
+      isDemo: true,
+    };
+
+    reservationCompletedEventRef.current = nextEvent;
+    setCompletedReservationId(nextEvent.reservationId);
+    return nextEvent;
+  };
+
+  const confirmReservation = () => {
+    const event = buildReservationCompletedEvent();
+    if (!event) return;
+
+    trackSelection('confirmation', selectedUnit?.id ?? 'sin_unidad', {
+      label: selectedUnit?.label,
+      display: selectedUnit?.label,
+      property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
+      sector: selectedSector?.id,
+      tower_or_block: selectedTorre?.id,
+      level: selectedLevel?.id,
+      model: selectedModel?.id,
+      selection_type: isApartments ? 'unidad' : 'lote',
+      action: 'confirmar_reserva',
+      reservation_id: event.reservationId,
+      event_id: event.eventId,
+    });
+
+    setReservationTransmissionError(null);
+
+    if (!window.opener) {
+      setReservationTransmissionStatus("no_admin");
+    } else {
+      try {
+        window.opener.postMessage(event, configuredAdminOrigin);
+        setReservationTransmissionStatus("sent");
+      } catch (error) {
+        setReservationTransmissionStatus("error");
+        setReservationTransmissionError(error instanceof Error ? error.message : "No se pudo transmitir el evento.");
+      }
+    }
+
+    setPostReservationStatus(initialPostReservationStatus);
+    navigateTo('next_steps_instructions', 10);
+  };
+
   const handleLogout = () => {
     // Reset all states
     setStep(1);
@@ -237,6 +386,10 @@ const App: React.FC = () => {
     setAnalysisResult(null);
     setPostReservationStatus(initialPostReservationStatus);
     setAccompanimentSelections([]);
+    setCompletedReservationId(null);
+    setReservationTransmissionStatus("idle");
+    setReservationTransmissionError(null);
+    reservationCompletedEventRef.current = null;
     martaScheduleDraftOpen.current = false;
     window.scrollTo(0, 0);
   };
@@ -336,6 +489,31 @@ const App: React.FC = () => {
           ))}
         </div>
       </div>
+      {reservationTransmissionStatus !== "idle" && (
+        <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm font-bold leading-6 text-primary">
+          {reservationTransmissionStatus === "sent" ? (
+            <>
+              <p className="font-black">Reserva de demostración confirmada</p>
+              <p>Evento enviado hacia el Centro Demo</p>
+              <p>Recepción pendiente de verificación</p>
+            </>
+          ) : reservationTransmissionStatus === "no_admin" ? (
+            <>
+              <p className="font-black">Reserva de demostración confirmada localmente</p>
+              <p>Centro Demo no conectado</p>
+              <p>Abra la App Pública desde el Centro Demo para transmitirla</p>
+            </>
+          ) : (
+            <>
+              <p className="font-black">Reserva de demostración confirmada localmente</p>
+              <p>No se pudo transmitir el evento al Centro Demo</p>
+              {reservationTransmissionError && <p className="text-xs">Detalle técnico: {reservationTransmissionError}</p>}
+            </>
+          )}
+          <p>Demo · No persistido</p>
+          <p>Reservation ID: {reservationId}</p>
+        </div>
+      )}
     </section>
   );
 
@@ -1483,24 +1661,10 @@ const UnitSelectionScreen = () => {
             <p className="text-sm font-bold text-secondary uppercase tracking-widest opacity-80 italic">Al confirmar, enviaremos esta selección a un asesor AMENA.</p>
           </div>
           <button 
-            onClick={() => {
-              trackSelection('confirmation', selectedUnit?.id ?? 'sin_unidad', {
-                label: selectedUnit?.label,
-                display: selectedUnit?.label,
-                property_type: selectedType === 'apartamentos' ? 'apartamento' : 'casa',
-                sector: selectedSector?.id,
-                tower_or_block: selectedTorre?.id,
-                level: selectedLevel?.id,
-                model: selectedModel?.id,
-                selection_type: isApartments ? 'unidad' : 'lote',
-                action: 'confirmar_seleccion'
-              });
-              setPostReservationStatus(initialPostReservationStatus);
-              navigateTo('next_steps_instructions', 10);
-            }}
+            onClick={confirmReservation}
             className={`w-full py-8 rounded-[2rem] ${accentBg} text-white font-black uppercase text-xl tracking-widest shadow-2xl active:scale-95 transition-transform`}
           >
-            CONFIRMAR SELECCIÓN
+            CONFIRMAR RESERVA
           </button>
         </div>
       </motion.div>
@@ -2929,7 +3093,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
       </button>
 
       <button 
-        onClick={() => navigateTo('welcome', 1)}
+        onClick={handleLogout}
         className="w-full py-6 mt-4 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
       >
         VOLVER AL INICIO
