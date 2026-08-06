@@ -105,6 +105,14 @@ type PublicLiveDemoResetAck = {
   status: "reset_complete";
 };
 
+type ReservationReplayRequest = {
+  type: "hoperia.reservation.replay.request";
+  schemaVersion: "1.0";
+  requestId: string;
+  requestedAt: string;
+  sourceApplication: "hoperia_admin_demo";
+};
+
 type ReservationCompletedEvent = {
   type: "hoperia.reservation.completed";
   schemaVersion: "1.0";
@@ -163,6 +171,7 @@ const configuredAdminOrigin =
 
 const legacyReservationSessionStorageKey = "amena_reservation_session_id";
 const reservationSessionStorageKey = "hoperia_reservation_session_id";
+const lastReservationCompletedEventStorageKey = "hoperia.demo.last_reservation_completed_event.v1";
 
 const App: React.FC = () => {
   const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
@@ -210,6 +219,7 @@ const App: React.FC = () => {
   const [reservationValidationError, setReservationValidationError] = useState<string | null>(null);
   const [reservationTransmissionStatus, setReservationTransmissionStatus] = useState<ReservationTransmissionStatus>("idle");
   const [reservationTransmissionError, setReservationTransmissionError] = useState<string | null>(null);
+  const [reservationReplayStatus, setReservationReplayStatus] = useState<"idle" | "available" | "requested" | "sent" | "empty" | "rejected">("idle");
 
   const totalSteps = 15;
   const isApartments = selectedType === 'apartamentos';
@@ -409,6 +419,61 @@ const App: React.FC = () => {
     `HOP-RES-${normalizeReservationSegment(reservationSessionId)}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
   );
 
+  const isNonEmptyString = (value: unknown): value is string =>
+    typeof value === "string" && value.trim().length > 0;
+
+  const isReservationCompletedEvent = (value: unknown): value is ReservationCompletedEvent => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+    const data = value as Partial<ReservationCompletedEvent>;
+    const client = data.client as ReservationCompletedEvent["client"] | undefined;
+    const project = data.project as ReservationCompletedEvent["project"] | undefined;
+    const selectedUnit = data.selectedUnit as ReservationCompletedEvent["selectedUnit"] | undefined;
+
+    return data.type === "hoperia.reservation.completed" &&
+      data.schemaVersion === "1.0" &&
+      data.sourceApplication === "hoperia_public_reservation_app" &&
+      isNonEmptyString(data.sourceOrigin) &&
+      data.reservationStatus === "completed" &&
+      data.isDemo === true &&
+      data.sourceChannel === "public_web_app" &&
+      isNonEmptyString(data.eventId) &&
+      isNonEmptyString(data.reservationId) &&
+      isNonEmptyString(data.occurredAt) &&
+      isNonEmptyString(client?.firstName) &&
+      isNonEmptyString(client?.lastName) &&
+      isNonEmptyString(client?.email) &&
+      isNonEmptyString(client?.phone) &&
+      isNonEmptyString(project?.name) &&
+      isNonEmptyString(selectedUnit?.propertyType) &&
+      isNonEmptyString(selectedUnit?.unitOrLot);
+  };
+
+  const readStoredReservationCompletedEvent = (): ReservationCompletedEvent | null => {
+    try {
+      const raw = localStorage.getItem(lastReservationCompletedEventStorageKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return isReservationCompletedEvent(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const storeReservationCompletedEvent = (event: ReservationCompletedEvent) => {
+    localStorage.setItem(lastReservationCompletedEventStorageKey, JSON.stringify(event));
+  };
+
+  const isReservationReplayRequest = (value: unknown): value is ReservationReplayRequest => (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    (value as Partial<ReservationReplayRequest>).type === "hoperia.reservation.replay.request" &&
+    (value as Partial<ReservationReplayRequest>).schemaVersion === "1.0" &&
+    isNonEmptyString((value as Partial<ReservationReplayRequest>).requestId) &&
+    isNonEmptyString((value as Partial<ReservationReplayRequest>).requestedAt) &&
+    (value as Partial<ReservationReplayRequest>).sourceApplication === "hoperia_admin_demo"
+  );
+
   const buildReservationSnapshotSignature = () => JSON.stringify([
     interestedPerson.firstName.trim(),
     interestedPerson.lastName.trim(),
@@ -544,7 +609,9 @@ const App: React.FC = () => {
 
     reservationCompletedEventRef.current = event;
     reservationSnapshotSignatureRef.current = currentSignature;
+    storeReservationCompletedEvent(event);
     setCompletedReservationId(event.reservationId);
+    setReservationReplayStatus("available");
 
     return { event, created: true };
   };
@@ -635,11 +702,13 @@ const App: React.FC = () => {
     reservationCompletedEventRef.current = null;
     reservationSnapshotSignatureRef.current = null;
     transmittedReservationEventIdRef.current = null;
+    localStorage.removeItem(lastReservationCompletedEventStorageKey);
     setCompletedReservationId(null);
     setShowReservationConfirmation(false);
     setReservationValidationError(null);
     setReservationTransmissionStatus("idle");
     setReservationTransmissionError(null);
+    setReservationReplayStatus("idle");
     martaScheduleDraftOpen.current = false;
     window.scrollTo(0, 0);
 
@@ -694,6 +763,53 @@ const App: React.FC = () => {
 
     return () => {
       window.removeEventListener('message', handleLiveDemoResetMessage);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const storedEvent = readStoredReservationCompletedEvent();
+    if (!storedEvent) {
+      setReservationReplayStatus("idle");
+      return;
+    }
+
+    reservationCompletedEventRef.current = storedEvent;
+    setCompletedReservationId(storedEvent.reservationId);
+    setShowReservationConfirmation(true);
+    setReservationReplayStatus("available");
+  }, []);
+
+  React.useEffect(() => {
+    const handleReservationReplayRequest = (event: MessageEvent) => {
+      if (event.origin !== configuredAdminOrigin) {
+        return;
+      }
+
+      if (event.source !== window.opener) {
+        return;
+      }
+
+      if (!isReservationReplayRequest(event.data)) {
+        return;
+      }
+
+      setReservationReplayStatus("requested");
+      const storedEvent = readStoredReservationCompletedEvent();
+
+      if (!storedEvent) {
+        setReservationReplayStatus("empty");
+        return;
+      }
+
+      window.opener.postMessage(storedEvent, configuredAdminOrigin);
+      setReservationReplayStatus("sent");
+      setCompletedReservationId(storedEvent.reservationId);
+    };
+
+    window.addEventListener('message', handleReservationReplayRequest);
+
+    return () => {
+      window.removeEventListener('message', handleReservationReplayRequest);
     };
   }, []);
 
@@ -752,11 +868,13 @@ const App: React.FC = () => {
     reservationCompletedEventRef.current = null;
     reservationSnapshotSignatureRef.current = null;
     transmittedReservationEventIdRef.current = null;
+    localStorage.removeItem(lastReservationCompletedEventStorageKey);
     setCompletedReservationId(null);
     setShowReservationConfirmation(false);
     setReservationValidationError(null);
     setReservationTransmissionStatus("idle");
     setReservationTransmissionError(null);
+    setReservationReplayStatus("idle");
     martaScheduleDraftOpen.current = false;
     window.scrollTo(0, 0);
   };
@@ -911,6 +1029,14 @@ const App: React.FC = () => {
     };
 
     const currentTransmissionCopy = transmissionCopy[reservationTransmissionStatus];
+    const replayCopy: Record<typeof reservationReplayStatus, string> = {
+      idle: "Sin evento guardado para replay.",
+      available: "Último evento disponible para recuperación.",
+      requested: "Replay solicitado desde Centro Demo.",
+      sent: "Último evento reenviado al Centro Demo.",
+      empty: "Centro Demo solicitó replay, pero no hay reserva guardada.",
+      rejected: "Solicitud de replay rechazada por origen o contrato.",
+    };
 
     return (
       <section className="rounded-[1.75rem] border border-primary/15 bg-white p-6 shadow-sm text-primary leading-7">
@@ -931,6 +1057,10 @@ const App: React.FC = () => {
           </p>
           <p>
             {currentTransmissionCopy.message}
+          </p>
+          <p>
+            <span className="block text-sm font-black uppercase tracking-widest text-primary/60">Replay demo:</span>
+            {replayCopy[reservationReplayStatus]}
           </p>
           {reservationTransmissionStatus === "error" && reservationTransmissionError && (
             <p className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold leading-6 text-red-950">
