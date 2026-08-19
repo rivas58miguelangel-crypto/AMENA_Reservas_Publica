@@ -111,6 +111,23 @@ type ReservationReplayRequest = {
   requestId: string;
   requestedAt: string;
   sourceApplication: "hoperia_admin_demo";
+  bridgeId?: string;
+};
+
+type AdminBridgeReadyMessage = {
+  type: "hoperia.admin.bridge.ready";
+  schemaVersion: "1.0";
+  bridgeId: string;
+  issuedAt: string;
+  sourceApplication: "hoperia_admin_demo";
+};
+
+type PublicBridgeAckMessage = {
+  type: "hoperia.public.bridge.ack";
+  schemaVersion: "1.0";
+  bridgeId: string;
+  acknowledgedAt: string;
+  sourceApplication: "hoperia_public_reservation_app";
 };
 
 type ReservationCompletedEvent = {
@@ -144,6 +161,7 @@ type ReservationCompletedEvent = {
   sourceChannel: "public_web_app";
   reservationStatus: "completed";
   isDemo: true;
+  bridgeId?: string;
 };
 
 const initialPostReservationStatus: PostReservationStatus = {
@@ -212,6 +230,8 @@ const App: React.FC = () => {
   const reservationCompletedEventRef = React.useRef<ReservationCompletedEvent | null>(null);
   const reservationSnapshotSignatureRef = React.useRef<string | null>(null);
   const transmittedReservationEventIdRef = React.useRef<string | null>(null);
+  const adminWindowRef = React.useRef<Window | null>(null);
+  const adminBridgeIdRef = React.useRef<string | null>(null);
   const processedResetIdsRef = React.useRef<Set<string>>(new Set());
   const processingResetIdsRef = React.useRef<Set<string>>(new Set());
   const [completedReservationId, setCompletedReservationId] = useState<string | null>(null);
@@ -474,6 +494,49 @@ const App: React.FC = () => {
     (value as Partial<ReservationReplayRequest>).sourceApplication === "hoperia_admin_demo"
   );
 
+  const isAdminBridgeReadyMessage = (value: unknown): value is AdminBridgeReadyMessage => (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    (value as Partial<AdminBridgeReadyMessage>).type === "hoperia.admin.bridge.ready" &&
+    (value as Partial<AdminBridgeReadyMessage>).schemaVersion === "1.0" &&
+    isNonEmptyString((value as Partial<AdminBridgeReadyMessage>).bridgeId) &&
+    isNonEmptyString((value as Partial<AdminBridgeReadyMessage>).issuedAt) &&
+    (value as Partial<AdminBridgeReadyMessage>).sourceApplication === "hoperia_admin_demo"
+  );
+
+  const isWindowMessageSource = (source: MessageEventSource | null): source is Window => (
+    Boolean(source) &&
+    typeof (source as Window).postMessage === "function" &&
+    "closed" in (source as Window)
+  );
+
+  const getAdminMessageTarget = () => {
+    if (adminWindowRef.current && !adminWindowRef.current.closed) {
+      return adminWindowRef.current;
+    }
+
+    if (window.opener && !window.opener.closed) {
+      return window.opener;
+    }
+
+    return null;
+  };
+
+  const isExpectedAdminSource = (event: MessageEvent<unknown>, bridgeId?: string) => (
+    (
+      window.opener !== null &&
+      event.source !== null &&
+      event.source === window.opener
+    ) ||
+    (
+      Boolean(bridgeId) &&
+      bridgeId === adminBridgeIdRef.current &&
+      event.source !== null &&
+      event.source === adminWindowRef.current
+    )
+  );
+
   const buildReservationSnapshotSignature = () => JSON.stringify([
     interestedPerson.firstName.trim(),
     interestedPerson.lastName.trim(),
@@ -622,14 +685,19 @@ const App: React.FC = () => {
       return;
     }
 
-    if (!window.opener || window.opener.closed) {
+    const adminWindow = getAdminMessageTarget();
+
+    if (!adminWindow) {
       setReservationTransmissionStatus("no_admin");
       setReservationTransmissionError("La App Pública debe abrirse desde el Centro Demo para transmitir la reserva.");
       return;
     }
 
     try {
-      window.opener.postMessage(event, configuredAdminOrigin);
+      adminWindow.postMessage({
+        ...event,
+        ...(adminBridgeIdRef.current ? { bridgeId: adminBridgeIdRef.current } : {}),
+      }, configuredAdminOrigin);
       transmittedReservationEventIdRef.current = event.eventId;
       setReservationTransmissionStatus("sent");
       setReservationTransmissionError(null);
@@ -653,7 +721,9 @@ const App: React.FC = () => {
   );
 
   const sendLiveDemoResetAck = (resetId: string) => {
-    if (!window.opener || window.opener.closed) {
+    const adminWindow = getAdminMessageTarget();
+
+    if (!adminWindow) {
       return;
     }
 
@@ -666,7 +736,7 @@ const App: React.FC = () => {
       status: "reset_complete",
     };
 
-    window.opener.postMessage(ack, configuredAdminOrigin);
+    adminWindow.postMessage(ack, configuredAdminOrigin);
   };
 
   const resetLiveDemoState = async () => {
@@ -716,12 +786,43 @@ const App: React.FC = () => {
   };
 
   React.useEffect(() => {
-    const handleLiveDemoResetMessage = async (event: MessageEvent) => {
+    const handleAdminBridgeMessage = (event: MessageEvent) => {
       if (event.origin !== configuredAdminOrigin) {
         return;
       }
 
-      if (event.source !== window.opener) {
+      if (!isAdminBridgeReadyMessage(event.data)) {
+        return;
+      }
+
+      if (!isWindowMessageSource(event.source)) {
+        return;
+      }
+
+      adminWindowRef.current = event.source;
+      adminBridgeIdRef.current = event.data.bridgeId;
+
+      const ack: PublicBridgeAckMessage = {
+        type: "hoperia.public.bridge.ack",
+        schemaVersion: "1.0",
+        bridgeId: event.data.bridgeId,
+        acknowledgedAt: new Date().toISOString(),
+        sourceApplication: "hoperia_public_reservation_app",
+      };
+
+      event.source.postMessage(ack, configuredAdminOrigin);
+    };
+
+    window.addEventListener('message', handleAdminBridgeMessage);
+
+    return () => {
+      window.removeEventListener('message', handleAdminBridgeMessage);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const handleLiveDemoResetMessage = async (event: MessageEvent) => {
+      if (event.origin !== configuredAdminOrigin) {
         return;
       }
 
@@ -736,6 +837,10 @@ const App: React.FC = () => {
       }
 
       if (!isAdminLiveDemoResetRequest(data)) {
+        return;
+      }
+
+      if (!isExpectedAdminSource(event, adminBridgeIdRef.current ?? undefined)) {
         return;
       }
 
@@ -785,11 +890,11 @@ const App: React.FC = () => {
         return;
       }
 
-      if (event.source !== window.opener) {
+      if (!isReservationReplayRequest(event.data)) {
         return;
       }
 
-      if (!isReservationReplayRequest(event.data)) {
+      if (!isExpectedAdminSource(event, event.data.bridgeId)) {
         return;
       }
 
@@ -801,7 +906,19 @@ const App: React.FC = () => {
         return;
       }
 
-      window.opener.postMessage(storedEvent, configuredAdminOrigin);
+      const adminWindow = isWindowMessageSource(event.source)
+        ? event.source
+        : getAdminMessageTarget();
+
+      if (!adminWindow) {
+        setReservationReplayStatus("rejected");
+        return;
+      }
+
+      adminWindow.postMessage({
+        ...storedEvent,
+        ...(adminBridgeIdRef.current ? { bridgeId: adminBridgeIdRef.current } : {}),
+      }, configuredAdminOrigin);
       setReservationReplayStatus("sent");
       setCompletedReservationId(storedEvent.reservationId);
     };
