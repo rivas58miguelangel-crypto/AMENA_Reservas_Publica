@@ -183,6 +183,7 @@ const initialInterestedPerson = {
 const CASE2_MAX_RETRIES = 1;
 const CASE2_DEMO_MARTA_LINK = 'https://reservas.automatizahoy.ai/marta-demo-pendiente';
 const CASE2_DEMO_SALES_CONTACT = '+503 0000-0000';
+const configuredDemoBackendUrl = import.meta.env.VITE_DEMO_BACKEND_URL?.trim() || '';
 
 const configuredAdminOrigin =
   import.meta.env.VITE_ADMIN_ORIGIN?.trim() || "http://localhost:3000";
@@ -379,7 +380,7 @@ const App: React.FC = () => {
     }
   };
 
-  const simulateCase2WhatsappSend = () => {
+  const sendCase2WhatsappSummary = async () => {
     if (case2SendStatus === 'sending') return;
     if (case2SendStatus === 'receipt_confirmed') return;
     if ((case2SendStatus === 'error' || case2SendStatus === 'provider_accepted') && case2RetryCount >= CASE2_MAX_RETRIES) return;
@@ -392,9 +393,8 @@ const App: React.FC = () => {
       setCase2RetryCount((current) => current + 1);
     }
 
-    trackPostReservationEvent('case2_whatsapp_simulated_send_started', {
-      simulated: true,
-      no_real_whatsapp_sent: true,
+    trackPostReservationEvent('case2_whatsapp_request_created', {
+      simulated: false,
       template: 'h_operia_reservation_summary',
       reservation_id: conceptualPayload.reservationId,
       selected_unit: conceptualPayload.selectedUnit,
@@ -403,24 +403,46 @@ const App: React.FC = () => {
       retry_count: isRetry ? case2RetryCount + 1 : case2RetryCount,
     });
 
-    window.setTimeout(() => {
+    try {
+      const backendUrl = new URL(configuredDemoBackendUrl);
+
+      if (backendUrl.protocol !== 'https:') {
+        throw new Error('invalid_demo_backend_url');
+      }
+
+      const response = await fetch(`${backendUrl.toString().replace(/\/$/, '')}/send-reservation-summary-whatsapp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(conceptualPayload),
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || result?.ok !== true || result?.status !== 'provider_accepted') {
+        throw new Error('whatsapp_provider_not_accepted');
+      }
+
       setCase2SendStatus('provider_accepted');
-      trackPostReservationEvent('case2_whatsapp_simulated_provider_accepted', {
-        simulated: true,
-        no_real_whatsapp_sent: true,
+      trackPostReservationEvent('case2_whatsapp_provider_accepted', {
+        simulated: false,
         provider_accepted_is_not_delivery_confirmation: true,
         template: 'h_operia_reservation_summary',
         reservation_id: conceptualPayload.reservationId,
       });
-    }, 700);
+    } catch {
+      setCase2SendStatus('error');
+      trackPostReservationEvent('case2_whatsapp_request_failed', {
+        template: 'h_operia_reservation_summary',
+        reservation_id: conceptualPayload.reservationId,
+        retry_count: isRetry ? case2RetryCount + 1 : case2RetryCount,
+      });
+    }
   };
 
   const confirmCase2WhatsappReceipt = () => {
     setCase2SendStatus('receipt_confirmed');
     setPostReservationStatus((current) => ({ ...current, whatsappReceiptConfirmed: true }));
     trackPostReservationEvent('case2_whatsapp_receipt_confirmed_by_user', {
-      simulated: true,
-      no_real_whatsapp_sent: true,
+      simulated: false,
       reservation_id: case2WhatsappPayload.reservationId,
     });
   };
@@ -3371,7 +3393,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
           <span className="inline-block text-[10px] font-black text-accent uppercase tracking-widest bg-accent/5 px-3 py-1 rounded-full mb-4">Confirmación WhatsApp Caso 2</span>
           <h3 className="text-xl font-black text-primary uppercase tracking-tight mb-4">Confirmación de cierre</h3>
           <p className="text-[14px] font-bold text-secondary/80 leading-snug mb-5">
-            Antes de finalizar, preparamos la confirmación WhatsApp de tu recorrido. Esta versión solo simula el estado visual: no envía WhatsApp real ni llama al backend.
+            Antes de finalizar, puedes solicitar por WhatsApp el resumen de tu recorrido.
           </p>
 
           <div className="space-y-4">
@@ -3388,7 +3410,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
             {case2SendStatus === 'idle' && (
               <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
                 <p className="text-[13px] font-black text-accent leading-snug">
-                  Estamos listos para preparar tu confirmación por WhatsApp.
+                  Estamos listos para enviar tu resumen por WhatsApp.
                 </p>
               </div>
             )}
@@ -3396,7 +3418,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
             {case2SendStatus === 'sending' && (
               <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
                 <p className="text-[13px] font-black text-accent leading-snug flex items-center gap-3">
-                  <RefreshCw className="w-4 h-4 animate-spin shrink-0" /> Estamos preparando tu confirmación por WhatsApp...
+                  <RefreshCw className="w-4 h-4 animate-spin shrink-0" /> Estamos enviando tu resumen por WhatsApp...
                 </p>
               </div>
             )}
@@ -3404,7 +3426,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
             {case2SendStatus === 'provider_accepted' && (
               <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
                 <p className="text-[13px] font-black text-primary leading-snug mb-3">
-                  Tu confirmación fue aceptada por el proveedor de WhatsApp.
+                  Tu solicitud de resumen fue aceptada por el proveedor de WhatsApp.
                 </p>
                 <p className="text-[12px] font-bold text-secondary/70 leading-snug">
                   Esto no significa entrega final al cliente. Por eso necesitamos que confirmes si ya recibiste tu mensaje.
@@ -3415,7 +3437,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
             {case2SendStatus === 'error' && (
               <div className="p-4 rounded-2xl bg-red-50 border border-red-100">
                 <p className="text-[13px] font-black text-red-700 leading-snug">
-                  No pudimos preparar la confirmación en este momento.
+                  No pudimos solicitar tu resumen por WhatsApp en este momento.
                 </p>
                 <p className="text-[12px] font-bold text-red-700/70 leading-snug mt-2">
                   Puedes intentar una vez más de forma controlada o finalizar la experiencia para seguimiento humano.
@@ -3447,10 +3469,10 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
 
             {case2SendStatus === 'provider_accepted' && case2RetryCount < CASE2_MAX_RETRIES && (
               <button
-                onClick={simulateCase2WhatsappSend}
+                onClick={sendCase2WhatsappSummary}
                 className="w-full py-4 rounded-2xl border-2 border-primary/15 text-primary font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
               >
-                Reenviar confirmación
+                Reenviar mi resumen por WhatsApp
               </button>
             )}
 
@@ -3466,11 +3488,11 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
           <div className="space-y-3 mt-6">
             {(case2SendStatus === 'idle' || case2SendStatus === 'error') && (
               <button
-                onClick={simulateCase2WhatsappSend}
+                onClick={sendCase2WhatsappSummary}
                 disabled={case2SendStatus === 'error' && case2RetryCount >= CASE2_MAX_RETRIES}
                 className="w-full py-5 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
               >
-                {case2SendStatus === 'error' ? 'Reenviar confirmación' : 'Preparar confirmación WhatsApp'}
+                {case2SendStatus === 'error' ? 'Reenviar mi resumen por WhatsApp' : 'Enviar mi resumen por WhatsApp'}
               </button>
             )}
 
@@ -3479,7 +3501,7 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
                 disabled
                 className="w-full py-5 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-lg opacity-50"
               >
-                Preparando confirmación...
+                Enviando resumen...
               </button>
             )}
           </div>
