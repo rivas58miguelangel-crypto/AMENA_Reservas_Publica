@@ -101,6 +101,7 @@ type AdminLiveDemoResetRequest = {
   resetId: string;
   requestedAt: string;
   sourceApplication: "hoperia_admin_demo";
+  demoRunId: string;
 };
 
 type PublicLiveDemoResetAck = {
@@ -109,6 +110,7 @@ type PublicLiveDemoResetAck = {
   resetId: string;
   acknowledgedAt: string;
   sourceApplication: "hoperia_public_reservation_app";
+  demoRunId: string;
   status: "reset_complete";
 };
 
@@ -118,6 +120,7 @@ type ReservationReplayRequest = {
   requestId: string;
   requestedAt: string;
   sourceApplication: "hoperia_admin_demo";
+  demoRunId: string;
   bridgeId?: string;
 };
 
@@ -125,6 +128,8 @@ type AdminBridgeReadyMessage = {
   type: "hoperia.admin.bridge.ready";
   schemaVersion: "1.0";
   bridgeId: string;
+  mode: "integrated";
+  demoRunId: string;
   issuedAt: string;
   sourceApplication: "hoperia_admin_demo";
 };
@@ -135,6 +140,8 @@ type PublicBridgeAckMessage = {
   bridgeId: string;
   acknowledgedAt: string;
   sourceApplication: "hoperia_public_reservation_app";
+  mode: "integrated";
+  demoRunId: string;
 };
 
 type ReservationCompletedEvent = {
@@ -168,6 +175,7 @@ type ReservationCompletedEvent = {
   sourceChannel: "public_web_app";
   reservationStatus: "completed";
   isDemo: true;
+  demoRunId?: string;
   bridgeId?: string;
 };
 
@@ -198,6 +206,7 @@ const configuredAdminOrigin =
 const legacyReservationSessionStorageKey = "amena_reservation_session_id";
 const reservationSessionStorageKey = "hoperia_reservation_session_id";
 const lastReservationCompletedEventStorageKey = "hoperia.demo.last_reservation_completed_event.v1";
+const integratedReservationEventStorageKey = (demoRunId: string) => `${lastReservationCompletedEventStorageKey}.${encodeURIComponent(demoRunId)}`;
 
 const App: React.FC = () => {
   const [reservationSessionId, setReservationSessionId] = useState<string | null>(null);
@@ -241,6 +250,8 @@ const App: React.FC = () => {
   const transmittedReservationEventIdRef = React.useRef<string | null>(null);
   const adminWindowRef = React.useRef<Window | null>(null);
   const adminBridgeIdRef = React.useRef<string | null>(null);
+  const integrationModeRef = React.useRef<"standalone" | "integrated">("standalone");
+  const integratedDemoRunIdRef = React.useRef<string | null>(null);
   const processedResetIdsRef = React.useRef<Set<string>>(new Set());
   const processingResetIdsRef = React.useRef<Set<string>>(new Set());
   const [completedReservationId, setCompletedReservationId] = useState<string | null>(null);
@@ -499,9 +510,9 @@ const App: React.FC = () => {
       isNonEmptyString(selectedUnit?.unitOrLot);
   };
 
-  const readStoredReservationCompletedEvent = (): ReservationCompletedEvent | null => {
+  const readStoredReservationCompletedEvent = (demoRunId: string): ReservationCompletedEvent | null => {
     try {
-      const raw = localStorage.getItem(lastReservationCompletedEventStorageKey);
+      const raw = localStorage.getItem(integratedReservationEventStorageKey(demoRunId));
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       return isReservationCompletedEvent(parsed) ? parsed : null;
@@ -511,7 +522,8 @@ const App: React.FC = () => {
   };
 
   const storeReservationCompletedEvent = (event: ReservationCompletedEvent) => {
-    localStorage.setItem(lastReservationCompletedEventStorageKey, JSON.stringify(event));
+    if (!event.demoRunId) return;
+    localStorage.setItem(integratedReservationEventStorageKey(event.demoRunId), JSON.stringify(event));
   };
 
   const isReservationReplayRequest = (value: unknown): value is ReservationReplayRequest => (
@@ -522,6 +534,7 @@ const App: React.FC = () => {
     (value as Partial<ReservationReplayRequest>).schemaVersion === "1.0" &&
     isNonEmptyString((value as Partial<ReservationReplayRequest>).requestId) &&
     isNonEmptyString((value as Partial<ReservationReplayRequest>).requestedAt) &&
+    isNonEmptyString((value as Partial<ReservationReplayRequest>).demoRunId) &&
     (value as Partial<ReservationReplayRequest>).sourceApplication === "hoperia_admin_demo"
   );
 
@@ -533,6 +546,8 @@ const App: React.FC = () => {
     (value as Partial<AdminBridgeReadyMessage>).schemaVersion === "1.0" &&
     isNonEmptyString((value as Partial<AdminBridgeReadyMessage>).bridgeId) &&
     isNonEmptyString((value as Partial<AdminBridgeReadyMessage>).issuedAt) &&
+    (value as Partial<AdminBridgeReadyMessage>).mode === "integrated" &&
+    isNonEmptyString((value as Partial<AdminBridgeReadyMessage>).demoRunId) &&
     (value as Partial<AdminBridgeReadyMessage>).sourceApplication === "hoperia_admin_demo"
   );
 
@@ -699,6 +714,9 @@ const App: React.FC = () => {
       sourceChannel: "public_web_app",
       reservationStatus: "completed",
       isDemo: true,
+      ...(integrationModeRef.current === "integrated" && integratedDemoRunIdRef.current
+        ? { demoRunId: integratedDemoRunIdRef.current }
+        : {}),
     };
 
     reservationCompletedEventRef.current = event;
@@ -718,6 +736,12 @@ const App: React.FC = () => {
 
     const adminWindow = getAdminMessageTarget();
 
+    if (integrationModeRef.current !== "integrated" || !integratedDemoRunIdRef.current) {
+      setReservationTransmissionStatus("no_admin");
+      setReservationTransmissionError("La reserva está en modo standalone y no alimenta Centro Demo.");
+      return;
+    }
+
     if (!adminWindow) {
       setReservationTransmissionStatus("no_admin");
       setReservationTransmissionError("La App Pública debe abrirse desde el Centro Demo para transmitir la reserva.");
@@ -727,6 +751,7 @@ const App: React.FC = () => {
     try {
       adminWindow.postMessage({
         ...event,
+        demoRunId: integratedDemoRunIdRef.current,
         ...(adminBridgeIdRef.current ? { bridgeId: adminBridgeIdRef.current } : {}),
       }, configuredAdminOrigin);
       transmittedReservationEventIdRef.current = event.eventId;
@@ -748,10 +773,11 @@ const App: React.FC = () => {
     Boolean((data as Partial<AdminLiveDemoResetRequest>).resetId?.trim()) &&
     typeof (data as Partial<AdminLiveDemoResetRequest>).requestedAt === 'string' &&
     Boolean((data as Partial<AdminLiveDemoResetRequest>).requestedAt?.trim()) &&
+    isNonEmptyString((data as Partial<AdminLiveDemoResetRequest>).demoRunId) &&
     (data as Partial<AdminLiveDemoResetRequest>).sourceApplication === "hoperia_admin_demo"
   );
 
-  const sendLiveDemoResetAck = (resetId: string) => {
+  const sendLiveDemoResetAck = (resetId: string, demoRunId: string) => {
     const adminWindow = getAdminMessageTarget();
 
     if (!adminWindow) {
@@ -764,13 +790,14 @@ const App: React.FC = () => {
       resetId,
       acknowledgedAt: new Date().toISOString(),
       sourceApplication: "hoperia_public_reservation_app",
+      demoRunId,
       status: "reset_complete",
     };
 
     adminWindow.postMessage(ack, configuredAdminOrigin);
   };
 
-  const resetLiveDemoState = async () => {
+  const resetLiveDemoState = async (demoRunId: string) => {
     reservationSessionGenerationRef.current += 1;
     const nextGeneration = reservationSessionGenerationRef.current;
 
@@ -804,7 +831,10 @@ const App: React.FC = () => {
     reservationCompletedEventRef.current = null;
     reservationSnapshotSignatureRef.current = null;
     transmittedReservationEventIdRef.current = null;
-    localStorage.removeItem(lastReservationCompletedEventStorageKey);
+    integrationModeRef.current = "standalone";
+    integratedDemoRunIdRef.current = null;
+    adminBridgeIdRef.current = null;
+    localStorage.removeItem(integratedReservationEventStorageKey(demoRunId));
     setCompletedReservationId(null);
     setShowReservationConfirmation(false);
     setReservationValidationError(null);
@@ -833,6 +863,13 @@ const App: React.FC = () => {
 
       adminWindowRef.current = event.source;
       adminBridgeIdRef.current = event.data.bridgeId;
+      integrationModeRef.current = event.data.mode;
+      integratedDemoRunIdRef.current = event.data.demoRunId;
+      reservationCompletedEventRef.current = null;
+      reservationSnapshotSignatureRef.current = null;
+      setCompletedReservationId(null);
+      setShowReservationConfirmation(false);
+      setReservationReplayStatus("idle");
 
       const ack: PublicBridgeAckMessage = {
         type: "hoperia.public.bridge.ack",
@@ -840,6 +877,8 @@ const App: React.FC = () => {
         bridgeId: event.data.bridgeId,
         acknowledgedAt: new Date().toISOString(),
         sourceApplication: "hoperia_public_reservation_app",
+        mode: "integrated",
+        demoRunId: event.data.demoRunId,
       };
 
       event.source.postMessage(ack, configuredAdminOrigin);
@@ -877,7 +916,7 @@ const App: React.FC = () => {
       }
 
       if (processedResetIdsRef.current.has(data.resetId)) {
-        sendLiveDemoResetAck(data.resetId);
+        sendLiveDemoResetAck(data.resetId, data.demoRunId);
         return;
       }
 
@@ -888,9 +927,10 @@ const App: React.FC = () => {
       processingResetIdsRef.current.add(data.resetId);
 
       try {
-        await resetLiveDemoState();
+        if (integrationModeRef.current !== "integrated" || integratedDemoRunIdRef.current !== data.demoRunId) return;
+        await resetLiveDemoState(data.demoRunId);
         processedResetIdsRef.current.add(data.resetId);
-        sendLiveDemoResetAck(data.resetId);
+        sendLiveDemoResetAck(data.resetId, data.demoRunId);
       } finally {
         processingResetIdsRef.current.delete(data.resetId);
       }
@@ -901,19 +941,6 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('message', handleLiveDemoResetMessage);
     };
-  }, []);
-
-  React.useEffect(() => {
-    const storedEvent = readStoredReservationCompletedEvent();
-    if (!storedEvent) {
-      setReservationReplayStatus("idle");
-      return;
-    }
-
-    reservationCompletedEventRef.current = storedEvent;
-    setCompletedReservationId(storedEvent.reservationId);
-    setShowReservationConfirmation(true);
-    setReservationReplayStatus("available");
   }, []);
 
   React.useEffect(() => {
@@ -931,9 +958,9 @@ const App: React.FC = () => {
       }
 
       setReservationReplayStatus("requested");
-      const storedEvent = readStoredReservationCompletedEvent();
+      const storedEvent = readStoredReservationCompletedEvent(event.data.demoRunId);
 
-      if (!storedEvent) {
+      if (!storedEvent || storedEvent.demoRunId !== event.data.demoRunId) {
         setReservationReplayStatus("empty");
         return;
       }
@@ -949,6 +976,7 @@ const App: React.FC = () => {
 
       adminWindow.postMessage({
         ...storedEvent,
+        demoRunId: event.data.demoRunId,
         ...(adminBridgeIdRef.current ? { bridgeId: adminBridgeIdRef.current } : {}),
       }, configuredAdminOrigin);
       setReservationReplayStatus("sent");
