@@ -56,6 +56,12 @@ type Screen =
   | 'final_success';
 
 type MartaContactPreference = 'talk_now' | 'schedule_call' | 'whatsapp_link' | null;
+type MartaAppointment = {
+  date: string;
+  time: string;
+  channel: 'marta_call';
+  status: 'requested';
+};
 type ProjectVisitPreference = 'request_visit' | 'schedule_visit' | null;
 type Case2SendStatus = 'idle' | 'sending' | 'provider_accepted' | 'error' | 'receipt_confirmed';
 type AccompanimentSelection = {
@@ -72,6 +78,7 @@ type Case2WhatsappPayload = {
   referencePrice: string;
   martaLink: string;
   salesContact: string;
+  martaAppointment?: MartaAppointment;
 };
 
 type PostReservationStatus = {
@@ -226,6 +233,7 @@ const App: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [postReservationStatus, setPostReservationStatus] = useState<PostReservationStatus>(initialPostReservationStatus);
   const [accompanimentSelections, setAccompanimentSelections] = useState<AccompanimentSelection[]>([]);
+  const [martaAppointment, setMartaAppointment] = useState<MartaAppointment | null>(null);
   const [case2SendStatus, setCase2SendStatus] = useState<Case2SendStatus>('idle');
   const [case2RetryCount, setCase2RetryCount] = useState(0);
   const reservationCompletedEventRef = React.useRef<ReservationCompletedEvent | null>(null);
@@ -272,6 +280,7 @@ const App: React.FC = () => {
     martaLink: CASE2_DEMO_MARTA_LINK,
     // Pendiente de fuente oficial; valor demo temporal centralizado.
     salesContact: CASE2_DEMO_SALES_CONTACT,
+    ...(martaAppointment ? { martaAppointment } : {}),
   };
 
   const createReservationSession = async (generation: number) => {
@@ -791,6 +800,7 @@ const App: React.FC = () => {
     setAnalysisResult(null);
     setPostReservationStatus(initialPostReservationStatus);
     setAccompanimentSelections([]);
+    setMartaAppointment(null);
     reservationCompletedEventRef.current = null;
     reservationSnapshotSignatureRef.current = null;
     transmittedReservationEventIdRef.current = null;
@@ -1002,6 +1012,7 @@ const App: React.FC = () => {
     setAnalysisResult(null);
     setPostReservationStatus(initialPostReservationStatus);
     setAccompanimentSelections([]);
+    setMartaAppointment(null);
     setCase2SendStatus('idle');
     setCase2RetryCount(0);
     reservationCompletedEventRef.current = null;
@@ -3133,6 +3144,14 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
         confirmationMessage: 'Recibimos tu preferencia de día y hora. La usaremos para seguimiento posterior dentro del mismo expediente.',
         onAction: (schedule) => {
           martaScheduleDraftOpen.current = true;
+          if (schedule) {
+            setMartaAppointment({
+              date: schedule.date,
+              time: schedule.time,
+              channel: 'marta_call',
+              status: 'requested',
+            });
+          }
           registerAccompanimentSelection({
             route: 'marta',
             label: 'Agendar una llamada con Marta',
@@ -3404,6 +3423,13 @@ No habrá WhatsApp parciales. Mantendremos un solo expediente y el mensaje conso
                 <p className="text-[13px] font-bold text-primary/80 leading-snug">Reserva: {case2WhatsappPayload.reservationId}</p>
                 <p className="text-[13px] font-bold text-primary/80 leading-snug">Unidad: {case2WhatsappPayload.selectedUnit}</p>
                 <p className="text-[13px] font-bold text-primary/80 leading-snug">Precio de referencia: {case2WhatsappPayload.referencePrice}</p>
+                {case2WhatsappPayload.martaAppointment && (
+                  <div className="pt-2 mt-2 border-t border-primary/10">
+                    <p className="text-[13px] font-bold text-primary/80 leading-snug">Llamada con Marta: solicitada</p>
+                    <p className="text-[13px] font-bold text-primary/80 leading-snug">Fecha: {case2WhatsappPayload.martaAppointment.date}</p>
+                    <p className="text-[13px] font-bold text-primary/80 leading-snug">Hora: {case2WhatsappPayload.martaAppointment.time}</p>
+                  </div>
+                )}
               </div>
             </div>
 
