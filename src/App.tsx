@@ -569,18 +569,14 @@ const App: React.FC = () => {
     return null;
   };
 
-  const isExpectedAdminSource = (event: MessageEvent<unknown>, bridgeId?: string) => (
-    (
-      window.opener !== null &&
-      event.source !== null &&
-      event.source === window.opener
-    ) ||
-    (
-      Boolean(bridgeId) &&
-      bridgeId === adminBridgeIdRef.current &&
-      event.source !== null &&
-      event.source === adminWindowRef.current
-    )
+  const isExpectedIntegratedAdminOperation = (event: MessageEvent<unknown>, demoRunId: string, bridgeId?: string) => (
+    integrationModeRef.current === "integrated" &&
+    isNonEmptyString(integratedDemoRunIdRef.current) &&
+    integratedDemoRunIdRef.current === demoRunId &&
+    isNonEmptyString(adminBridgeIdRef.current) &&
+    (!bridgeId || adminBridgeIdRef.current === bridgeId) &&
+    event.source !== null &&
+    event.source === adminWindowRef.current
   );
 
   const buildReservationSnapshotSignature = () => JSON.stringify([
@@ -861,15 +857,20 @@ const App: React.FC = () => {
         return;
       }
 
+      const isNewIntegratedContext = integrationModeRef.current !== event.data.mode ||
+        integratedDemoRunIdRef.current !== event.data.demoRunId ||
+        adminBridgeIdRef.current !== event.data.bridgeId;
       adminWindowRef.current = event.source;
       adminBridgeIdRef.current = event.data.bridgeId;
       integrationModeRef.current = event.data.mode;
       integratedDemoRunIdRef.current = event.data.demoRunId;
-      reservationCompletedEventRef.current = null;
-      reservationSnapshotSignatureRef.current = null;
-      setCompletedReservationId(null);
-      setShowReservationConfirmation(false);
-      setReservationReplayStatus("idle");
+      if (isNewIntegratedContext) {
+        reservationCompletedEventRef.current = null;
+        reservationSnapshotSignatureRef.current = null;
+        setCompletedReservationId(null);
+        setShowReservationConfirmation(false);
+        setReservationReplayStatus("idle");
+      }
 
       const ack: PublicBridgeAckMessage = {
         type: "hoperia.public.bridge.ack",
@@ -911,7 +912,7 @@ const App: React.FC = () => {
         return;
       }
 
-      if (!isExpectedAdminSource(event, adminBridgeIdRef.current ?? undefined)) {
+      if (!isExpectedIntegratedAdminOperation(event, data.demoRunId, adminBridgeIdRef.current ?? undefined)) {
         return;
       }
 
@@ -953,7 +954,7 @@ const App: React.FC = () => {
         return;
       }
 
-      if (!isExpectedAdminSource(event, event.data.bridgeId)) {
+      if (!isNonEmptyString(event.data.bridgeId) || !isExpectedIntegratedAdminOperation(event, event.data.demoRunId, event.data.bridgeId)) {
         return;
       }
 
