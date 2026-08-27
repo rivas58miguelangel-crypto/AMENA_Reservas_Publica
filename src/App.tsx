@@ -102,6 +102,7 @@ type AdminLiveDemoResetRequest = {
   requestedAt: string;
   sourceApplication: "hoperia_admin_demo";
   demoRunId: string;
+  bridgeId: string;
 };
 
 type PublicLiveDemoResetAck = {
@@ -111,6 +112,7 @@ type PublicLiveDemoResetAck = {
   acknowledgedAt: string;
   sourceApplication: "hoperia_public_reservation_app";
   demoRunId: string;
+  bridgeId: string;
   status: "reset_complete";
 };
 
@@ -770,10 +772,11 @@ const App: React.FC = () => {
     typeof (data as Partial<AdminLiveDemoResetRequest>).requestedAt === 'string' &&
     Boolean((data as Partial<AdminLiveDemoResetRequest>).requestedAt?.trim()) &&
     isNonEmptyString((data as Partial<AdminLiveDemoResetRequest>).demoRunId) &&
+    isNonEmptyString((data as Partial<AdminLiveDemoResetRequest>).bridgeId) &&
     (data as Partial<AdminLiveDemoResetRequest>).sourceApplication === "hoperia_admin_demo"
   );
 
-  const sendLiveDemoResetAck = (resetId: string, demoRunId: string) => {
+  const sendLiveDemoResetAck = (resetId: string, demoRunId: string, bridgeId: string) => {
     const adminWindow = getAdminMessageTarget();
 
     if (!adminWindow) {
@@ -787,6 +790,7 @@ const App: React.FC = () => {
       acknowledgedAt: new Date().toISOString(),
       sourceApplication: "hoperia_public_reservation_app",
       demoRunId,
+      bridgeId,
       status: "reset_complete",
     };
 
@@ -912,12 +916,12 @@ const App: React.FC = () => {
         return;
       }
 
-      if (!isExpectedIntegratedAdminOperation(event, data.demoRunId, adminBridgeIdRef.current ?? undefined)) {
+      if (!isExpectedIntegratedAdminOperation(event, data.demoRunId, data.bridgeId)) {
         return;
       }
 
       if (processedResetIdsRef.current.has(data.resetId)) {
-        sendLiveDemoResetAck(data.resetId, data.demoRunId);
+        sendLiveDemoResetAck(data.resetId, data.demoRunId, data.bridgeId);
         return;
       }
 
@@ -931,7 +935,7 @@ const App: React.FC = () => {
         if (integrationModeRef.current !== "integrated" || integratedDemoRunIdRef.current !== data.demoRunId) return;
         await resetLiveDemoState(data.demoRunId);
         processedResetIdsRef.current.add(data.resetId);
-        sendLiveDemoResetAck(data.resetId, data.demoRunId);
+        sendLiveDemoResetAck(data.resetId, data.demoRunId, data.bridgeId);
       } finally {
         processingResetIdsRef.current.delete(data.resetId);
       }
