@@ -177,6 +177,7 @@ type ReservationCompletedEvent = {
   sourceChannel: "public_web_app";
   reservationStatus: "completed";
   isDemo: true;
+  demoPurpose: "volunteer-experience" | "operational-scenario";
   demoRunId?: string;
   bridgeId?: string;
 };
@@ -499,6 +500,7 @@ const App: React.FC = () => {
       isNonEmptyString(data.sourceOrigin) &&
       data.reservationStatus === "completed" &&
       data.isDemo === true &&
+      (data.demoPurpose === "volunteer-experience" || data.demoPurpose === "operational-scenario") &&
       data.sourceChannel === "public_web_app" &&
       isNonEmptyString(data.eventId) &&
       isNonEmptyString(data.reservationId) &&
@@ -712,6 +714,7 @@ const App: React.FC = () => {
       sourceChannel: "public_web_app",
       reservationStatus: "completed",
       isDemo: true,
+      demoPurpose: "volunteer-experience",
       ...(integrationModeRef.current === "integrated" && integratedDemoRunIdRef.current
         ? { demoRunId: integratedDemoRunIdRef.current }
         : {}),
